@@ -32,7 +32,7 @@ typedef boost::make_recursive_variant<
 		double, bool,
 		uint8_t, uint16_t, uint32_t, uint64_t,
 		int8_t, int16_t, int32_t, int64_t,
-		sc_dt::sc_bv_base, sc_dt::sc_lv_base,
+		sc_dt::sc_bv_base, sc_dt::sc_lv_base, sc_core::sc_time,
 		std::vector<std::pair<std::string, boost::recursive_variant_>>
 >::type value;
 using object = std::vector<std::pair<std::string, value>>;
@@ -59,10 +59,10 @@ public:
 };
 
 template<typename T>
-struct key_value {std::string key;	T& value;};
+struct key_value {std::string key;	T const& value;};
 
 template <typename T>
-key_value<T> field(std::string const& k, T& v) { return { k, v }; }
+key_value<T> field(std::string const& k, T const& v) { return { k, v }; }
 
 template <typename T> value record(T const& t);
 template <typename T> value record(T& t);
@@ -114,7 +114,7 @@ struct value_converter<T, typename std::enable_if<has_record_member<T>::value>::
 		return a.get_value();
 	}
 };
-
+template<> struct value_converter<no_data> { static value to_value(no_data v) { return value(); } };
 /// standard types
 #define VAL_CONV(T) template<> struct value_converter<T> { static value to_value(T v) { return value(v); } }
 VAL_CONV(char const*);
@@ -129,6 +129,7 @@ VAL_CONV(uint64_t);
 VAL_CONV(uint32_t);
 VAL_CONV(uint16_t);
 VAL_CONV(uint8_t);
+//VAL_CONV(sc_core::sc_time);
 
 template <typename T>
 value record(T const& t) {
@@ -306,18 +307,19 @@ public:
 
 protected:
 	friend class tx_handle;
-    tx_handle begin_tx(value const&, sc_core::sc_time,
+    tx_handle begin_tx(value const&, sc_core::sc_time const&,
                                      tx_relation_handle,
                                      tx_handle const* = nullptr) const;
-    void end_tx(tx_handle&, value const&, sc_core::sc_time) const;
+    void end_tx(tx_handle&, value const&, sc_core::sc_time const&) const;
 };
 
 class tx_handle {
 	struct impl;
 	std::shared_ptr<impl> pimpl;
 	friend class tx_generator_base;
-	tx_handle(const tx_generator_base &gen, value const& v, sc_core::sc_time t);
-	void deactivate(value const& v, sc_core::sc_time t);
+	tx_handle(const tx_generator_base &gen, value const& v, sc_core::sc_time const& t);
+	void deactivate(value const& v, sc_core::sc_time const& t);
+	void end_tx(const value &v, sc_core::sc_time const& end_sc_time);
 public:
 	tx_handle() {}
 
@@ -329,27 +331,23 @@ public:
 
 	uint64_t get_id() const;
 
-	void end_tx() {end_tx(value(), sc_core::SC_ZERO_TIME);}
+	void end_tx() {	end_tx(value(), sc_core::sc_time_stamp()); }
 
-	void end_tx(value const& v) {end_tx(v, sc_core::SC_ZERO_TIME);}
+	template <typename END>
+	void end_tx(const END& attr) {	end_tx(record(attr), sc_core::sc_time_stamp()); }
 
-	void end_tx(const value &v, sc_core::sc_time end_sc_time);
-
-	template <class END>
-	void end_tx(const END& attr) {	end_tx(record(attr), sc_core::SC_ZERO_TIME); }
-
-	template <class END>
-	void end_tx(const END& attr, sc_core::sc_time end_time) { end_tx(record(attr), end_time); }
+	template <typename END>
+	void end_tx(const END& attr, sc_core::sc_time const& end_time) { end_tx(record(attr), end_time); }
 
 	void record_attribute(char const* name, value const& attr);
 
-	template <class T>
+	template <typename T>
 	void record_attribute(std::string const& name, const T& attr) {	record_attribute(name, record(attr)); }
 
-	template <class T>
+	template <typename T>
 	void record_attribute(const char* name, const T& attr) { record_attribute(name, record(attr)); }
 
-	template <class T>
+	template <typename T>
 	void record_attribute(const T& attr) { record_attribute(nullptr, record(attr)); }
 
 	using tx_handle_class_cb = std::function<void(const tx_handle&, callback_reason, value const&)>;
@@ -393,7 +391,7 @@ public:
 
 	virtual ~tx_generator() = default;
 
-	tx_handle begin_tx() { return this->begin_tx(nullptr, sc_core::sc_time_stamp(), 0); }
+	tx_handle begin_tx() { return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), 0); }
 
 	tx_handle begin_tx(tx_relation_handle relation_h, tx_handle const& other_tx_h) {
 		return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), relation_h, &other_tx_h);
@@ -422,33 +420,33 @@ public:
 				&other_tx_h);
 	}
 
-	tx_handle begin_tx(sc_core::sc_time begin_sc_time) {
+	tx_handle begin_tx(sc_core::sc_time const& begin_sc_time) {
 		return tx_generator_base::begin_tx(value(), begin_sc_time, 0);
 	}
 
-	tx_handle begin_tx(sc_core::sc_time begin_sc_time, tx_relation_handle relation_h,	const tx_handle& other_tx_h) {
+	tx_handle begin_tx(sc_core::sc_time const& begin_sc_time, tx_relation_handle relation_h,	const tx_handle& other_tx_h) {
 		return tx_generator_base::begin_tx(value(), begin_sc_time, relation_h, &other_tx_h);
 	}
 
-	tx_handle begin_tx(sc_core::sc_time begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
+	tx_handle begin_tx(sc_core::sc_time const& begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
 		return tx_generator_base::begin_tx(value(), begin_sc_time,
 				get_tx_fiber().get_tx_db()->create_relation(relation_name),
 				&other_tx_h);
 	}
 
-	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time begin_sc_time) {
+	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time const& begin_sc_time) {
 		auto v = lwtr::record(begin_attr);
-		return tx_generator_base::begin_tx(&v, begin_sc_time, 0);
+		return tx_generator_base::begin_tx(v, begin_sc_time, 0);
 	}
 
-	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time begin_sc_time, tx_relation_handle relation_h, const tx_handle& other_tx_h) {
+	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time const& begin_sc_time, tx_relation_handle relation_h, const tx_handle& other_tx_h) {
 		auto v = lwtr::record(begin_attr);
-		return tx_generator_base::begin_tx(&v, begin_sc_time, relation_h, &other_tx_h);
+		return tx_generator_base::begin_tx(v, begin_sc_time, relation_h, &other_tx_h);
 	}
 
-	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
+	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time const& begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
 		auto v = lwtr::record(begin_attr);
-		return tx_generator_base::begin_tx(&v, begin_sc_time,
+		return tx_generator_base::begin_tx(v, begin_sc_time,
 				get_tx_fiber().get_tx_db()->create_relation(relation_name),
 				&other_tx_h);
 	}
@@ -462,11 +460,11 @@ public:
 		tx_generator_base::end_tx(t, v, sc_core::sc_time_stamp());
 	}
 
-	void end_tx(tx_handle& t, sc_core::sc_time end_sc_time) {
+	void end_tx(tx_handle& t, sc_core::sc_time const& end_sc_time) {
 		this->end_tx(t, value(), end_sc_time);
 	}
 
-	void end_tx(tx_handle& t, const END& end_attr, sc_core::sc_time end_sc_time) {
+	void end_tx(tx_handle& t, const END& end_attr, sc_core::sc_time const& end_sc_time) {
 		auto v = lwtr::record(end_attr);
 		tx_generator_base::end_tx(t, v, end_sc_time);
 	}

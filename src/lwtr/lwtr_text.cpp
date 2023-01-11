@@ -82,10 +82,11 @@ struct value_visitor : public boost::static_visitor<> {
 	mutable std::vector<std::string> hier_name;
 
 	value_visitor(uint64_t tx_id, std::string const& name):tx_id(tx_id) {
-		hier_name.push_back(name);
+		if(name.length()) hier_name.push_back(name);
 	}
 
 	std::string get_full_name() const {
+		if(hier_name.empty()) return "unnamed";
 	    std::ostringstream os;
 	    auto b = std::begin(hier_name);
 	    auto e = std::end(hier_name);
@@ -140,6 +141,9 @@ struct value_visitor : public boost::static_visitor<> {
 	}
 	void operator()(sc_dt::sc_lv_base const& v) const {
 		FPRINTF(my_text_file_p, "tx_record_attribute {} \"{}\" LOGIC_VECTOR = \"{}\"\n", tx_id, get_full_name(), v.to_string());
+	}
+	void operator()(sc_core::sc_time v) const {
+		FPRINTF(my_text_file_p, "tx_record_attribute {} \"{}\" STRING = \"{}\"\n", tx_id, get_full_name(), v.to_string());
 	}
 	void operator()(std::vector<std::pair<std::string, value>> const& v) const {
 		for(auto& e:v) {

@@ -137,8 +137,8 @@ std::vector<std::pair<uint64_t, tx_generator_base::tx_generator_class_cb>> tx_ge
 tx_generator_base::tx_generator_base(const char *name, tx_fiber &fiber, const char *begin_attribute_name,	const char *end_attribute_name)
 : fiber(fiber)
 , generator_name(name)
-, begin_attr_name((begin_attribute_name&&*begin_attribute_name)?begin_attribute_name:"unnamed")
-, end_attr_name((end_attribute_name&&*end_attribute_name)?end_attribute_name:"unnamed")
+, begin_attr_name((begin_attribute_name&&*begin_attribute_name)?begin_attribute_name:"")
+, end_attr_name((end_attribute_name&&*end_attribute_name)?end_attribute_name:"")
 , id(++fid_counter)
 {
 	for(auto& e:impl::cb) e.second(*this, CREATE);
@@ -160,12 +160,14 @@ void tx_generator_base::unregister_class_cb(uint64_t id) {
 		impl::cb.erase(it);
 }
 
-tx_handle tx_generator_base::begin_tx(value const& v, sc_core::sc_time begin_time, tx_relation_handle relation_handle, const tx_handle *other_handle_p) const {
+tx_handle tx_generator_base::begin_tx(value const& v, sc_core::sc_time const& begin_time, tx_relation_handle relation_handle, const tx_handle *other_handle_p) const {
 	tx_handle hndl(*this, v, begin_time);
+	if(other_handle_p)
+		hndl.add_relation(relation_handle, *other_handle_p);
 	return hndl;
 }
 
-void tx_generator_base::end_tx(tx_handle& t, value const& v, sc_core::sc_time end_time) const {
+void tx_generator_base::end_tx(tx_handle& t, value const& v, sc_core::sc_time const& end_time) const {
 	t.deactivate(v, end_time);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,7 +179,7 @@ struct tx_handle::impl {
 	bool active{false};
 	sc_core::sc_time begin_time, end_time;
 
-	impl(tx_generator_base const& gen, sc_core::sc_time t):gen(gen), id(++tid_counter), begin_time(t) {
+	impl(tx_generator_base const& gen, sc_core::sc_time const& t):gen(gen), id(++tid_counter), active{true}, begin_time(t) {
 		if(t<sc_core::sc_time_stamp()) {
             std::stringstream ss;
             ss << "transaction start time ("<<t<<") needs to be larger than current time (" << sc_core::sc_time_stamp()<<")";
@@ -196,13 +198,13 @@ std::vector<std::pair<uint64_t, tx_handle::tx_handle_class_cb>> tx_handle::impl:
 std::vector<std::pair<uint64_t, tx_handle::tx_handle_attribute_cb>> tx_handle::impl::acb;
 std::vector<std::pair<uint64_t, tx_handle::tx_handle_relation_cb>> tx_handle::impl::rcb;
 
-tx_handle::tx_handle(tx_generator_base const& gen, value const& v, sc_core::sc_time t)
+tx_handle::tx_handle(tx_generator_base const& gen, value const& v, sc_core::sc_time const& t)
 : pimpl(std::make_shared<impl>(gen, t))
 {
 	for(auto& e:impl::cb) e.second(*this, BEGIN, v);
 }
 
-void tx_handle::deactivate(value const& v, sc_core::sc_time t) {
+void tx_handle::deactivate(value const& v, sc_core::sc_time const& t) {
 	if(t<sc_core::sc_time_stamp()) {
         std::stringstream ss;
         ss << "transaction end time ("<<t<<") needs to be larger than current time (" << sc_core::sc_time_stamp()<<")";
@@ -253,7 +255,7 @@ bool tx_handle::is_active() const {return pimpl->active; }
 
 uint64_t tx_handle::get_id() const { return pimpl->id; }
 
-void tx_handle::end_tx(const value &v, sc_core::sc_time end_sc_time) { pimpl->gen.end_tx(*this, v, end_sc_time); }
+void tx_handle::end_tx(const value &v, sc_core::sc_time const& end_sc_time) { pimpl->gen.end_tx(*this, v, end_sc_time); }
 
 sc_core::sc_time tx_handle::get_begin_sc_time() const { return pimpl->begin_time; }
 
@@ -263,12 +265,12 @@ tx_fiber const& tx_handle::get_tx_fiber() const {return pimpl->gen.get_tx_fiber(
 
 tx_generator_base const& tx_handle::get_tx_generator_base() const { return pimpl->gen; }
 
-void tx_handle::record_attribute(const char *name, const value &attr) {
-	//TODO: implement
+void tx_handle::record_attribute(const char *name, value const& v) {
+	for(auto& e:impl::acb) e.second(*this, name, v);
 }
 
 bool tx_handle::add_relation(tx_relation_handle relation_handle, tx_handle const& other_transaction_handle) {
-	//TODO: implement
+	for(auto& e:impl::rcb) e.second(*this, other_transaction_handle, relation_handle);
 	return true;
 }
 
