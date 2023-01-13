@@ -129,7 +129,7 @@ VAL_CONV(uint64_t);
 VAL_CONV(uint32_t);
 VAL_CONV(uint16_t);
 VAL_CONV(uint8_t);
-//VAL_CONV(sc_core::sc_time);
+VAL_CONV(sc_core::sc_time);
 
 template <typename T>
 value record(T const& t) {
