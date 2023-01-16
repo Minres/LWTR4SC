@@ -20,7 +20,6 @@ FetchContent_Declare(fmt
   GIT_TAG master
 )
 FetchContent_MakeAvailable(fmt)
-find_package(Boost)
 endif()
 
 

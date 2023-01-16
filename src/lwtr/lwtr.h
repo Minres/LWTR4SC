@@ -16,26 +16,32 @@
 
 #pragma once
 
-#include <boost/variant.hpp>
 #include <systemc>
 #include <string>
 #include <vector>
 #include <functional>
 #include <memory>
 #include <limits>
+#include <mpark/variant.hpp>
 
 namespace lwtr {
 struct no_data {};
-typedef boost::make_recursive_variant<
+struct value;
+using object = std::vector<std::pair<std::string, value>>;
+using value_base = mpark::variant<
 		no_data,
 		std::string, char const*,
 		double, bool,
 		uint8_t, uint16_t, uint32_t, uint64_t,
 		int8_t, int16_t, int32_t, int64_t,
 		sc_dt::sc_bv_base, sc_dt::sc_lv_base, sc_core::sc_time,
-		std::vector<std::pair<std::string, boost::recursive_variant_>>
->::type value;
-using object = std::vector<std::pair<std::string, value>>;
+		object
+	>;
+struct value : public value_base{
+    inline constexpr value() noexcept : value_base() {}
+    template <typename Arg>
+    inline constexpr value(Arg &&arg) noexcept : value_base(arg) {}
+};
 
 /// http://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Member_Detector
 /// \todo Fails to compile for unions
@@ -336,8 +342,10 @@ public:
 	template <typename END>
 	void end_tx(const END& attr) {	end_tx(record(attr), sc_core::sc_time_stamp()); }
 
+	void end_tx_delayed(sc_core::sc_time const& end_time) {	end_tx(value(), end_time); }
+
 	template <typename END>
-	void end_tx(const END& attr, sc_core::sc_time const& end_time) { end_tx(record(attr), end_time); }
+	void end_tx_delayed(sc_core::sc_time const& end_time, const END& attr) { end_tx(record(attr), end_time); }
 
 	void record_attribute(char const* name, value const& attr);
 
@@ -391,7 +399,9 @@ public:
 
 	virtual ~tx_generator() = default;
 
-	tx_handle begin_tx() { return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), 0); }
+	tx_handle begin_tx() {
+		return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), 0);
+	}
 
 	tx_handle begin_tx(tx_relation_handle relation_h, tx_handle const& other_tx_h) {
 		return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), relation_h, &other_tx_h);
@@ -420,31 +430,31 @@ public:
 				&other_tx_h);
 	}
 
-	tx_handle begin_tx(sc_core::sc_time const& begin_sc_time) {
+	tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time) {
 		return tx_generator_base::begin_tx(value(), begin_sc_time, 0);
 	}
 
-	tx_handle begin_tx(sc_core::sc_time const& begin_sc_time, tx_relation_handle relation_h,	const tx_handle& other_tx_h) {
+	tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, tx_relation_handle relation_h,	const tx_handle& other_tx_h) {
 		return tx_generator_base::begin_tx(value(), begin_sc_time, relation_h, &other_tx_h);
 	}
 
-	tx_handle begin_tx(sc_core::sc_time const& begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
+	tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
 		return tx_generator_base::begin_tx(value(), begin_sc_time,
 				get_tx_fiber().get_tx_db()->create_relation(relation_name),
 				&other_tx_h);
 	}
 
-	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time const& begin_sc_time) {
+	tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const BEGIN& begin_attr) {
 		auto v = lwtr::record(begin_attr);
 		return tx_generator_base::begin_tx(v, begin_sc_time, 0);
 	}
 
-	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time const& begin_sc_time, tx_relation_handle relation_h, const tx_handle& other_tx_h) {
+	tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const BEGIN& begin_attr, tx_relation_handle relation_h, const tx_handle& other_tx_h) {
 		auto v = lwtr::record(begin_attr);
 		return tx_generator_base::begin_tx(v, begin_sc_time, relation_h, &other_tx_h);
 	}
 
-	tx_handle begin_tx(const BEGIN& begin_attr, sc_core::sc_time const& begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
+	tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const BEGIN& begin_attr, const char* relation_name, const tx_handle& other_tx_h) {
 		auto v = lwtr::record(begin_attr);
 		return tx_generator_base::begin_tx(v, begin_sc_time,
 				get_tx_fiber().get_tx_db()->create_relation(relation_name),
@@ -460,11 +470,11 @@ public:
 		tx_generator_base::end_tx(t, v, sc_core::sc_time_stamp());
 	}
 
-	void end_tx(tx_handle& t, sc_core::sc_time const& end_sc_time) {
-		this->end_tx(t, value(), end_sc_time);
+	void end_tx_delayed(tx_handle& t, sc_core::sc_time const& end_sc_time) {
+		tx_generator_base::end_tx(t, value(), end_sc_time);
 	}
 
-	void end_tx(tx_handle& t, const END& end_attr, sc_core::sc_time const& end_sc_time) {
+	void end_tx_delayed(tx_handle& t, sc_core::sc_time const& end_sc_time, const END& end_attr) {
 		auto v = lwtr::record(end_attr);
 		tx_generator_base::end_tx(t, v, end_sc_time);
 	}

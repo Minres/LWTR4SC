@@ -76,7 +76,7 @@ static void tx_fiber_cbf(const tx_fiber& s, callback_reason reason) {
     }
 }
 // ----------------------------------------------------------------------------
-struct value_visitor : public boost::static_visitor<> {
+struct value_visitor {
 	uint64_t const tx_id;
 
 	mutable std::vector<std::string> hier_name;
@@ -145,10 +145,10 @@ struct value_visitor : public boost::static_visitor<> {
 	void operator()(sc_core::sc_time v) const {
 		FPRINTF(my_text_file_p, "tx_record_attribute {} \"{}\" STRING = \"{}\"\n", tx_id, get_full_name(), v.to_string());
 	}
-	void operator()(std::vector<std::pair<std::string, value>> const& v) const {
+	void operator()(lwtr::object const& v) const {
 		for(auto& e:v) {
-			hier_name.push_back(e.first);
-			boost::apply_visitor( *this, e.second );
+			hier_name.push_back(std::get<0>(e));
+			mpark::visit(*this, std::get<1>(e) );
 			hier_name.pop_back();
 		}
 	}
@@ -173,10 +173,10 @@ static void tx_handle_cbf(const tx_handle& t, callback_reason reason, value cons
     case BEGIN: {
         FPRINTF(my_text_file_p, "tx_begin {} {} {}\n", t.get_id(), t.get_tx_generator_base().get_id(),
                 t.get_begin_sc_time().to_string());
-        boost::apply_visitor( value_visitor(t.get_id(),  t.get_tx_generator_base().get_begin_attribute_name()), v);
+        mpark::visit( value_visitor(t.get_id(),  t.get_tx_generator_base().get_begin_attribute_name()), v);
     } break;
     case END: {
-        boost::apply_visitor( value_visitor(t.get_id(),  t.get_tx_generator_base().get_end_attribute_name()), v);
+    	mpark::visit( value_visitor(t.get_id(),  t.get_tx_generator_base().get_end_attribute_name()), v);
         FPRINTF(my_text_file_p, "tx_end {} {} {}\n", t.get_id(), t.get_tx_generator_base().get_id(),
                 t.get_end_sc_time().to_string());
     } break;
@@ -192,7 +192,7 @@ static void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attri
     if(my_text_file_p == nullptr)
         return;
     std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
-    boost::apply_visitor( value_visitor(t.get_id(),  tmp_str), v);
+    mpark::visit( value_visitor(t.get_id(),  tmp_str), v);
 }
 // ----------------------------------------------------------------------------
 static void tx_handle_relation_cbf(const tx_handle& tr_1, const tx_handle& tr_2, tx_relation_handle relation_handle) {

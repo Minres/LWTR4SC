@@ -17,5 +17,5 @@ else()
     target_include_directories (lwtr PUBLIC ${SystemC_INCLUDE_DIRS})    
     target_link_libraries(lwtr PUBLIC ${SystemC_LIBRARIES} )
 endif()
-target_link_libraries (lwtr PUBLIC fmt::fmt Boost::boost)
+target_link_libraries (lwtr PUBLIC fmt::fmt)
 
