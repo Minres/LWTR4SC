@@ -230,7 +230,7 @@ class tx_db {
 	std::unique_ptr<impl> pimpl;
 	bool enable{true};
 public:
-	tx_db(const char* recording_file_name, sc_core::sc_time_unit = sc_core::SC_FS);
+	tx_db(std::string const& recording_file_name, sc_core::sc_time_unit = sc_core::SC_FS);
 
 	virtual ~tx_db();
 
@@ -250,6 +250,8 @@ public:
 	bool get_recording() const {return enable;}
 
 	tx_relation_handle create_relation(const char* relation_name) const;
+
+	tx_relation_handle create_relation(std::string const& relation_name) const {return create_relation(relation_name.c_str());}
 
 	std::string const& get_relation_name(tx_relation_handle relation_h) const;
 };
@@ -292,7 +294,7 @@ class tx_generator_base {
 	std::string const end_attr_name;
 	uint64_t const id;
 public:
-	tx_generator_base(const char* name, tx_fiber& s, const char* begin_attribute_name, const char* end_attribute_name);
+	tx_generator_base(std::string const& name, tx_fiber& s, std::string const& begin_attribute_name = "", std::string const& end_attribute_name = "");
 
 	virtual ~tx_generator_base();
 
@@ -350,7 +352,7 @@ public:
 	void record_attribute(char const* name, value const& attr);
 
 	template <typename T>
-	void record_attribute(std::string const& name, const T& attr) {	record_attribute(name, record(attr)); }
+	void record_attribute(std::string const& name, const T& attr) {	record_attribute(name.c_str(), record(attr)); }
 
 	template <typename T>
 	void record_attribute(const char* name, const T& attr) { record_attribute(name, record(attr)); }
@@ -376,6 +378,10 @@ public:
 	bool add_relation(tx_relation_handle, const tx_handle&);
 
 	bool add_relation(const char* relation_name, const tx_handle& other_tx_h) {
+		return add_relation(get_tx_fiber().get_tx_db()->create_relation(relation_name), other_tx_h);
+	};
+
+	bool add_relation(std::string const& relation_name, const tx_handle& other_tx_h) {
 		return add_relation(get_tx_fiber().get_tx_db()->create_relation(relation_name), other_tx_h);
 	};
 
@@ -479,5 +485,11 @@ public:
 		tx_generator_base::end_tx(t, v, end_sc_time);
 	}
 };
+
 void tx_text_init();
+
+void tx_text_gz_init();
+
+void tx_text_lz4_init();
+
 } // namespace tx_ng

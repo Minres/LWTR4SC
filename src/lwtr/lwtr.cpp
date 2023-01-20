@@ -40,7 +40,7 @@ struct tx_db::impl {
 tx_db* tx_db::impl::default_db=nullptr;
 std::vector<std::pair<uint64_t, tx_db::tx_db_class_cb>> tx_db::impl::cb;
 
-tx_db::tx_db(const char *recording_file_name, sc_core::sc_time_unit)
+tx_db::tx_db(std::string const& recording_file_name, sc_core::sc_time_unit)
 : pimpl(new tx_db::impl(recording_file_name))
 {
 	impl::default_db=this;
@@ -134,11 +134,11 @@ struct tx_generator_base::impl {
 };
 std::vector<std::pair<uint64_t, tx_generator_base::tx_generator_class_cb>> tx_generator_base::impl::cb;
 
-tx_generator_base::tx_generator_base(const char *name, tx_fiber &fiber, const char *begin_attribute_name,	const char *end_attribute_name)
+tx_generator_base::tx_generator_base(std::string const& name, tx_fiber &fiber, std::string const& begin_attribute_name,	std::string const& end_attribute_name)
 : fiber(fiber)
 , generator_name(name)
-, begin_attr_name((begin_attribute_name&&*begin_attribute_name)?begin_attribute_name:"")
-, end_attr_name((end_attribute_name&&*end_attribute_name)?end_attribute_name:"")
+, begin_attr_name(begin_attribute_name)
+, end_attr_name(end_attribute_name)
 , id(++fid_counter)
 {
 	for(auto& e:impl::cb) e.second(*this, CREATE);
