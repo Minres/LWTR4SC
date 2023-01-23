@@ -34,7 +34,8 @@
 #endif
 
 namespace lwtr {
-
+namespace {
+// ----------------------------------------------------------------------------
 class PlainWriter {
 	std::ofstream out;
 public:
@@ -51,8 +52,11 @@ public:
 	inline void write(std::string && buf) {
 		out.write(buf.c_str(), buf.size());
 	}
-};
 
+	static std::string const extension;
+};
+std::string const PlainWriter::extension{"lwtrt"};
+// ----------------------------------------------------------------------------
 #ifdef WITH_ZLIB
 class GZipWriter {
 	gzFile file_p = nullptr;
@@ -73,9 +77,12 @@ public:
 	inline void write(std::string && buf) {
 		 gzprintf(file_p, buf.c_str());
 	}
-};
-#endif
 
+	static std::string const extension;
+};
+std::string const GZipWriter::extension{"lwtrt.gz"};
+#endif
+// ----------------------------------------------------------------------------
 #ifdef WITH_LZ4
 class LZ4Writer {
 	std::ofstream ofs;
@@ -103,9 +110,12 @@ public:
 	inline void write(std::string && buf) {
 		out.write(buf.c_str(), buf.size());
 	}
-};
-#endif
 
+	static std::string const extension;
+};
+std::string const LZ4Writer::extension{"lwtrt.lz"};
+#endif
+// ----------------------------------------------------------------------------
 template<typename WRITER>
 struct Writer {
 	std::unique_ptr<WRITER> writer;
@@ -129,35 +139,37 @@ struct Writer {
 		writer->write(fmt::format(format, args...));
 	}
 
-	static Writer &get() {
+	inline std::string const& get_extension(){ return WRITER::extension;}
+
+	inline static Writer &get() {
 		static Writer db;
 		return db;
 	}
 };
+// ----------------------------------------------------------------------------
 template<typename DB>
 void tx_db_cbf(tx_db const& _tx_db, callback_reason reason) {
-	static std::string my_text_file_name("tx_default.lwtrt");
+	static std::string file_name("tx_default");
 	switch(reason) {
 	case CREATE: {
 		if(_tx_db.get_name().length() != 0) {
-			my_text_file_name = _tx_db.get_name();
+			file_name = _tx_db.get_name();
 		}
-		my_text_file_name+=".lwtrt";
-		auto res = Writer<DB>::get().open(my_text_file_name);
-		if(!res) {
+		file_name+="."+Writer<DB>::get().get_extension();
+		if(Writer<DB>::get().open(file_name)) {
+			std::stringstream ss;
+			ss << "opening file " << file_name;
+			SC_REPORT_INFO(__FUNCTION__, ss.str().c_str());
+		} else {
 			std::stringstream ss;
 			ss << "Can't open text recording file. " << strerror(errno);
 			SC_REPORT_ERROR(__FUNCTION__, ss.str().c_str());
-		} else {
-			std::stringstream ss;
-			ss << "opening file " << my_text_file_name;
-			SC_REPORT_INFO(__FUNCTION__, ss.str().c_str());
 		}
 	}
 	break;
 	case DELETE: {
 		std::stringstream ss;
-		ss << "closing file " << my_text_file_name;
+		ss << "closing file " << file_name;
 		SC_REPORT_INFO(__FUNCTION__, ss.str().c_str());
 		Writer<DB>::get().close();
 	}
@@ -191,7 +203,7 @@ struct value_visitor {
 				[](size_t a, std::string const& b){return a+b.size();});
 		std::string res(buf_size+hier_name.size()-1, 0);
 		auto* buffer = res.data();
-		char* ptr=buffer;
+		char* ptr=const_cast<char*>(buffer);
 		for(auto&e: hier_name) {
 			if(ptr!=buffer) {
 				*ptr='.';
@@ -317,6 +329,7 @@ void tx_handle_relation_cbf(const tx_handle& tr_1, const tx_handle& tr_2, tx_rel
 	}
 }
 // ----------------------------------------------------------------------------
+}
 // ----------------------------------------------------------------------------
 void tx_text_init() {
 	tx_db::register_class_cb(tx_db_cbf<PlainWriter>);
@@ -346,6 +359,6 @@ void tx_text_lz4_init() {
     tx_handle::register_relation_cb(tx_handle_relation_cbf<LZ4Writer>);
 }
 #endif
-} // namespace txrec
+} // namespace lwtr
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------

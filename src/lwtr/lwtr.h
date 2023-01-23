@@ -397,7 +397,7 @@ public:
 template <typename BEGIN = no_data, typename END = no_data>
 class tx_generator : public tx_generator_base {
 public:
-	tx_generator(const char* name, tx_fiber& s, const char* begin_attribute_name = nullptr, const char* end_attribute_name = nullptr)
+	tx_generator(const char* name, tx_fiber& s, std::string const& begin_attribute_name = "", std::string const& end_attribute_name = "")
 	: tx_generator_base(name, s, begin_attribute_name, end_attribute_name)
 	{ }
 
