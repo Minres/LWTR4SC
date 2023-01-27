@@ -201,16 +201,12 @@ struct value_visitor {
 		if(hier_name.empty()) return "unnamed";
 		auto buf_size = std::accumulate(hier_name.begin(), hier_name.end(), 0U,
 				[](size_t a, std::string const& b){return a+b.size();});
-		std::string res(buf_size+hier_name.size()-1, 0);
-		auto* buffer = res.data();
-		char* ptr=const_cast<char*>(buffer);
+		std::string res;
+		res.reserve(buf_size+hier_name.size());
+		bool need_sep = false;
 		for(auto&e: hier_name) {
-			if(ptr!=buffer) {
-				*ptr='.';
-				ptr++;
-			}
-			strncpy(ptr, e.c_str(), e.size());
-			ptr+=e.size();
+			if(need_sep) res.append(".");
+			res.append(e);
 		}
 		return res;
 	}
