@@ -5,6 +5,7 @@ find_package(fmt QUIET)
 set(SOURCES lwtr/lwtr.cpp lwtr/lwtr_text.cpp)
 if(TARGET lz4::lz4)
 	list(APPEND SOURCES lwtr/util/lz4_streambuf.cpp)
+	list(APPEND SOURCES lwtr/lwtr_ftr.cpp)
 endif()
 
 add_library (lwtr ${SOURCES})

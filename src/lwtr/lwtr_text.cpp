@@ -225,28 +225,28 @@ struct value_visitor {
 		Writer<DB>::get().write("tx_record_attribute {} \"{}\" BOOLEAN = {}\n", tx_id, get_full_name(), v ? "true" : "false");
 	}
 	void operator()(uint8_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(uint16_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(uint32_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(uint64_t v) const {
 		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(int8_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(int16_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(int32_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(int64_t v) const {
-		Writer<DB>::get().write("tx_record_attribute {} \"{}\" UNSIGNED = {}\n", tx_id, get_full_name(), v);
+		Writer<DB>::get().write("tx_record_attribute {} \"{}\" INTEGER = {}\n", tx_id, get_full_name(), v);
 	}
 	void operator()(sc_dt::sc_bv_base const& v) const {
 		Writer<DB>::get().write("tx_record_attribute {} \"{}\" BIT_VECTOR = \"{}\"\n", tx_id, get_full_name(), v.to_string());

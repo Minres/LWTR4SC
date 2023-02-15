@@ -492,4 +492,5 @@ void tx_text_gz_init();
 
 void tx_text_lz4_init();
 
+void tx_ftr_init(bool compressed);
 } // namespace tx_ng
