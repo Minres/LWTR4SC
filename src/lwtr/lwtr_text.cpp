@@ -19,7 +19,6 @@
 #include <cerrno>
 #include <cstring>
 #include <fmt/format.h>
-#include <fmt/os.h>
 #include <fmt/printf.h>
 #include <sstream>
 #include <string>
