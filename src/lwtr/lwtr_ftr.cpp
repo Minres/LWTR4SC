@@ -58,8 +58,9 @@ void tx_db_cbf(tx_db const& _tx_db, callback_reason reason) {
 		if(_tx_db.get_name().length() != 0) {
 			file_name = _tx_db.get_name();
 		}
-		file_name+=".txftr";
+		file_name+=".ftr";
 		if(Writer<DB>::get().open(file_name)) {
+		    Writer<DB>::writer().writeInfo(sc_core::sc_time(1, sc_core::SC_SEC)/sc_core::sc_time(1, sc_core::SC_PS));
 			std::stringstream ss;
 			ss << "opening file " << file_name;
 			SC_REPORT_INFO(__FUNCTION__, ss.str().c_str());
