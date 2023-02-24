@@ -38,7 +38,7 @@ struct Writer {
 		return output_writer->cw.enc.ofs.is_open();
 	}
 
-	inline void close() { delete output_writer.release(); }
+	inline void close() { output_writer.reset(nullptr); }
 
 	inline bool is_open() { return output_writer->cw.enc.ofs.is_open();}
 
@@ -85,7 +85,7 @@ void tx_db_cbf(tx_db const& _tx_db, callback_reason reason) {
 // ----------------------------------------------------------------------------
 template<typename DB>
 void tx_fiber_cbf(const tx_fiber& s, callback_reason reason) {
-	if(reason == CREATE) {
+	if(Writer<DB>::get().is_open() && reason == CREATE) {
 		Writer<DB>::writer().writeStream(s.get_id(), s.get_name(), s.get_fiber_kind());
 	}
 }
@@ -107,9 +107,8 @@ struct value_visitor {
 				[](size_t a, std::string const& b){return a+b.size();});
 		std::string res;
 		res.reserve(buf_size+hier_name.size());
-		bool need_sep = false;
 		for(auto&e: hier_name) {
-			if(need_sep) res.append(".");
+			if(res.size()) res.append(".");
 			res.append(e);
 		}
 		return res;
@@ -172,7 +171,9 @@ struct value_visitor {
 // ----------------------------------------------------------------------------
 template<typename DB>
 void tx_generator_cbf(const tx_generator_base& g, callback_reason reason) {
-	Writer<DB>::writer().writeGenerator(g.get_id(), g.get_name(), g.get_tx_fiber().get_id());
+	if(Writer<DB>::get().is_open() && reason == CREATE) {
+		Writer<DB>::writer().writeGenerator(g.get_id(), g.get_name(), g.get_tx_fiber().get_id());
+	}
 }
 // ----------------------------------------------------------------------------
 template<typename DB>

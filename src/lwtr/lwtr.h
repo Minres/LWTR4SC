@@ -78,7 +78,7 @@ class access {
 
 public:
 	template<typename T>
-	access& operator & (key_value<T> kv) {
+	access& operator & (key_value<T> const& kv) {
 		o.emplace_back(std::make_pair(kv.key, record(kv.value)));
 		return *this;
 	}

@@ -17,6 +17,7 @@
 #include <lz4.h>
 #include <ctime>
 
+namespace lwtr {
 namespace cbor {
 enum {
 	MAX_TXBUFFER_SIZE=1<<16,
@@ -463,11 +464,10 @@ enum class data_type {
     LOGIC_VECTOR,                 // sc_logic, sc_lv
     FIXED_POINT_INTEGER,          // sc_fixed
     UNSIGNED_FIXED_POINT_INTEGER, // sc_ufixed
-    RECORD,                       // struct/class
     POINTER,                      // T*
-    ARRAY,                        // T[N]
     STRING,                       // string, std::string
-	TIME                          // sc_time
+	TIME,                         // sc_time
+	NONE
 };
 
 template<bool COMPRESSED=false>
@@ -565,5 +565,6 @@ struct chunked_writer  {
 		}
 	}
 };
-}
+} // namespace cbor
+} // namespace lwtr
 #endif /* OSCI_LIB_SCC_SRC_SYSC_SCC_CBOR_H_ */
