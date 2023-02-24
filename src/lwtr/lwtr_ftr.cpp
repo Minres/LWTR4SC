@@ -193,7 +193,7 @@ void tx_handle_cbf(const tx_handle& t, callback_reason reason, value const& v) {
 	} break;
 	case END: {
 		mpark::visit( value_visitor<DB>(t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
-		Writer<DB>::writer().endTransaction(t.get_id(), t.get_begin_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
+		Writer<DB>::writer().endTransaction(t.get_id(), t.get_end_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
 	} break;
 	default:;
 	}
