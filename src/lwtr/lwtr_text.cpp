@@ -32,6 +32,11 @@
 #include "util/lz4_streambuf.h"
 #endif
 
+#if __cplusplus < 201703L
+#define STD mpark
+#else
+#define STD std
+#endif
 namespace lwtr {
 namespace {
 // ----------------------------------------------------------------------------
@@ -259,7 +264,7 @@ struct value_visitor {
 	void operator()(lwtr::object const& v) const {
 		for(auto& e:v) {
 			hier_name.push_back(std::get<0>(e));
-			mpark::visit(*this, std::get<1>(e) );
+			STD ::visit(*this, std::get<1>(e) );
 			hier_name.pop_back();
 		}
 	}
@@ -286,10 +291,10 @@ void tx_handle_cbf(const tx_handle& t, callback_reason reason, value const& v) {
 	case BEGIN: {
 		Writer<DB>::get().write("tx_begin {} {} {}\n", t.get_id(), t.get_tx_generator_base().get_id(),
 				t.get_begin_sc_time().to_string());
-		mpark::visit( value_visitor<DB>(t.get_id(),  t.get_tx_generator_base().get_begin_attribute_name()), v);
+		STD ::visit( value_visitor<DB>(t.get_id(),  t.get_tx_generator_base().get_begin_attribute_name()), v);
 	} break;
 	case END: {
-		mpark::visit( value_visitor<DB>(t.get_id(),  t.get_tx_generator_base().get_end_attribute_name()), v);
+		STD ::visit( value_visitor<DB>(t.get_id(),  t.get_tx_generator_base().get_end_attribute_name()), v);
 		Writer<DB>::get().write("tx_end {} {} {}\n", t.get_id(), t.get_tx_generator_base().get_id(),
 				t.get_end_sc_time().to_string());
 	} break;
@@ -306,7 +311,7 @@ void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attribute_na
 	if(!Writer<DB>::get().is_open())
 		return;
 	std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
-	mpark::visit( value_visitor<DB>(t.get_id(),  tmp_str), v);
+	STD ::visit( value_visitor<DB>(t.get_id(),  tmp_str), v);
 }
 // ----------------------------------------------------------------------------
 template<typename DB>

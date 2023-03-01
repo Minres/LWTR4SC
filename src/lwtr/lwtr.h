@@ -22,13 +22,19 @@
 #include <functional>
 #include <memory>
 #include <limits>
+#if __cplusplus < 201703L
 #include <mpark/variant.hpp>
-
+using variant_type = mpark::variant;
+#else
+#include <variant>
+template<typename... _Types>
+using variant_type = std::variant<_Types...>;
+#endif
 namespace lwtr {
 struct no_data {};
 struct value;
 using object = std::vector<std::pair<std::string, value>>;
-using value_base = mpark::variant<
+using value_base = variant_type<
 		no_data,
 		std::string, char const*,
 		double, bool,

@@ -21,6 +21,12 @@
 #include <cstring>
 #include <sstream>
 
+#if __cplusplus < 201703L
+#define STD mpark
+#else
+#define STD std
+#endif
+
 namespace lwtr {
 namespace {
 // ----------------------------------------------------------------------------
@@ -95,23 +101,18 @@ struct value_visitor {
 	uint64_t const tx_id;
 	cbor::event_type const pos;
 
-	mutable std::vector<std::string> hier_name;
+	mutable char hier_full_name[1024] = {};
+	mutable char* insert_point=hier_full_name;
 
 	value_visitor(uint64_t tx_id, cbor::event_type pos, std::string const& name):tx_id(tx_id), pos(pos) {
-		if(name.length()) hier_name.push_back(name);
+		if(name.length()) strncpy(insert_point, name.c_str(), name.length());
 	}
 
-	std::string get_full_name() const {
-		if(hier_name.empty()) return "unnamed";
-		auto buf_size = std::accumulate(hier_name.begin(), hier_name.end(), 0U,
-				[](size_t a, std::string const& b){return a+b.size();});
-		std::string res;
-		res.reserve(buf_size+hier_name.size());
-		for(auto&e: hier_name) {
-			if(res.size()) res.append(".");
-			res.append(e);
-		}
-		return res;
+	const char* get_full_name() const {
+		if(insert_point==hier_full_name)
+			return "unnamed";
+		*insert_point=0;
+		return hier_full_name;
 	}
 
 	void operator()(const lwtr::no_data& v) const {	}
@@ -162,9 +163,12 @@ struct value_visitor {
 	}
 	void operator()(lwtr::object const& v) const {
 		for(auto& e:v) {
-			hier_name.push_back(std::get<0>(e));
-			mpark::visit(*this, std::get<1>(e) );
-			hier_name.pop_back();
+			auto old_insert_point = insert_point;
+			if(insert_point!=hier_full_name)
+				*insert_point='.';
+			strncpy(++insert_point, std::get<0>(e).c_str(), std::get<0>(e).length());
+			STD ::visit(*this, std::get<1>(e) );
+			insert_point=old_insert_point;
 		}
 	}
 };
@@ -189,10 +193,10 @@ void tx_handle_cbf(const tx_handle& t, callback_reason reason, value const& v) {
 		Writer<DB>::writer().startTransaction(t.get_id(), t.get_tx_generator_base().get_id(),
 				t.get_tx_generator_base().get_tx_fiber().get_id(),
 				t.get_begin_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
-		mpark::visit( value_visitor<DB>(t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
+		STD ::visit( value_visitor<DB>(t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
 	} break;
 	case END: {
-		mpark::visit( value_visitor<DB>(t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
+		STD ::visit( value_visitor<DB>(t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
 		Writer<DB>::writer().endTransaction(t.get_id(), t.get_end_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
 	} break;
 	default:;
@@ -208,7 +212,7 @@ void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attribute_na
 	if(!Writer<DB>::get().is_open())
 		return;
 	std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
-	mpark::visit( value_visitor<DB>(t.get_id(), cbor::event_type::RECORD,  tmp_str), v);
+	STD ::visit( value_visitor<DB>(t.get_id(), cbor::event_type::RECORD,  tmp_str), v);
 }
 // ----------------------------------------------------------------------------
 template<typename DB>
