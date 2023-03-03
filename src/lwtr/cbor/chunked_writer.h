@@ -12,11 +12,12 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <unordered_map>
 #include <lz4.h>
 #include <ctime>
-
+#include <lwtr/lwtr.h>
 namespace lwtr {
 namespace cbor {
 enum {
@@ -221,17 +222,47 @@ struct info {
     }
 };
 
+struct char_equal_to : public std::equal_to<char const*>  {
+    bool operator()(char const* __x, char const* __y) const
+    { return strcmp( __x, __y ) == 0; }
+};
+
+struct char_hash{
+    //BKDR hash algorithm
+	std::size_t  operator()(char const* str) const {
+    	constexpr unsigned int seed = 131; // 31  131 1313 13131131313 etc//
+    	std::size_t  hash = 0;
+    	while(*str) {
+    		hash = (hash * seed) + (*str);
+    		str++;
+    	}
+    	return hash;
+    }
+};
+
 struct dictionary {
 	std::vector<std::string> out_dict{""};
-	std::unordered_map<std::string, size_t> lut;
+	std::unordered_map<char const*, size_t, char_hash, char_equal_to> lut;
 	size_t flushed_idx{0}, unflushed_size{1};
+
+	size_t get_key(nonstd::string_view const& str) {
+		if(!str.length()) return 0;
+		auto it = lut.find(str.data());
+		if(it!=std::end(lut))
+			return it->second;
+		out_dict.push_back(nonstd::to_string(str));
+		lut.insert({out_dict.back().c_str(), out_dict.size()-1});
+		unflushed_size += str.size();
+		return out_dict.size()-1;
+	}
 
 	size_t get_key(std::string const& str) {
 		if(!str.length()) return 0;
-		auto it = lut.find(str);
-		if(it!=std::end(lut)) return it->second;
+		auto it = lut.find(str.c_str());
+		if(it!=std::end(lut))
+			return it->second;
 		out_dict.push_back(str);
-		lut[str] = out_dict.size()-1;
+		lut.insert({out_dict.back().c_str(), out_dict.size()-1});
 		unflushed_size += str.size();
 		return out_dict.size()-1;
 	}
@@ -256,7 +287,8 @@ struct directory {
 	dictionary& dict;
 	directory(dictionary& dict):dict(dict){}
 
-	inline void add_stream(uint64_t id, std::string const& name, std::string const& kind) {
+	template<typename N>
+	inline void add_stream(uint64_t id, N const& name, std::string const& kind) {
 		if(enc.is_empty()) enc.start_array();
 		enc.write_tag(16);
 		enc.start_array(3);
@@ -265,7 +297,8 @@ struct directory {
 		enc.write(dict.get_key(kind));
 	}
 
-	inline void add_generator(uint64_t id, std::string const& name, uint64_t stream) {
+	template<typename N>
+	inline void add_generator(uint64_t id, N const& name, uint64_t stream) {
 		if(enc.is_empty()) enc.start_array();
 		enc.write_tag(17);
 		enc.start_array(3);
@@ -293,7 +326,8 @@ struct relations {
 	dictionary& dict;
 	relations(dictionary& dict):dict(dict){}
 
-	inline void add_relation(std::string const& name, uint64_t from, uint64_t to) {
+	template<typename N>
+	inline void add_relation(N const& name, uint64_t from, uint64_t to) {
 		if(enc.is_empty()) enc.start_array();
 		enc.start_array(3);
 		enc.write(dict.get_key(name));
@@ -545,20 +579,23 @@ struct chunked_writer  {
 		free_pool.push_back(e);
 	}
 
-	inline void writeAttribute(uint64_t id, event_type event, const std::string& name, data_type type, const std::string& value) {
+	template<typename N>
+	inline void writeAttribute(uint64_t id, event_type event, N const& name, data_type type, const std::string& value) {
 		txs[id]->add_attribute(static_cast<uint64_t>(event), dict.get_key(name), static_cast<uint64_t>(type), dict.get_key(value));
 	}
 
-	inline void writeAttribute(uint64_t id, event_type event, const std::string& name, data_type type, const char* value) {
-		txs[id]->add_attribute(static_cast<uint64_t>(event), dict.get_key(name), static_cast<uint64_t>(type), dict.get_key(value));
+	template<typename N>
+	inline void writeAttribute(uint64_t id, event_type event, N const& name, data_type type, const char* value) {
+		txs[id]->add_attribute(static_cast<uint64_t>(event), dict.get_key(name), static_cast<uint64_t>(type), dict.get_key(nonstd::string_view(value)));
 	}
 
-	template<typename T>
-	inline void writeAttribute(uint64_t id, event_type event, const std::string& name, data_type type, T value) {
+	template<typename N, typename T>
+	inline void writeAttribute(uint64_t id, event_type event, N const& name, data_type type, T value) {
 		txs[id]->add_attribute(static_cast<uint64_t>(event), dict.get_key(name), static_cast<uint64_t>(type), value);
 	}
 
-	inline void writeRelation(const std::string& name, uint64_t sink_id, uint64_t src_id) {
+	template<typename N>
+	inline void writeRelation(N const& name, uint64_t sink_id, uint64_t src_id) {
 		rel.add_relation(name, src_id, sink_id);
 		if(rel.size()>MAX_REL_SIZE){
 			rel.flush(cw);

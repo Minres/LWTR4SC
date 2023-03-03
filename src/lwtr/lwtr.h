@@ -22,31 +22,30 @@
 #include <functional>
 #include <memory>
 #include <limits>
-#if __cplusplus < 201703L
-#include <mpark/variant.hpp>
-using variant_type = mpark::variant;
-#else
-#include <variant>
-template<typename... _Types>
-using variant_type = std::variant<_Types...>;
-#endif
+#include <nonstd/variant.hpp>
+#include <nonstd/string_view.hpp>
+
 namespace lwtr {
 struct no_data {};
 struct value;
 using object = std::vector<std::pair<std::string, value>>;
-using value_base = variant_type<
+using value_base = nonstd::variant<
 		no_data,
-		std::string, char const*,
-		double, bool,
-		uint8_t, uint16_t, uint32_t, uint64_t,
-		int8_t, int16_t, int32_t, int64_t,
-		sc_dt::sc_bv_base, sc_dt::sc_lv_base, sc_core::sc_time,
+		std::string,
+		char const*,
+		double,
+		bool,
+		uint64_t,
+		int64_t,
+		sc_dt::sc_bv_base,
+		sc_dt::sc_lv_base,
+		sc_core::sc_time,
 		object
 	>;
 struct value : public value_base{
-    inline constexpr value() noexcept : value_base() {}
+    inline value() noexcept : value_base() {}
     template <typename Arg>
-    inline constexpr value(Arg &&arg) noexcept : value_base(arg) {}
+    inline value(Arg &&arg) noexcept : value_base(arg) {}
 };
 
 /// http://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Member_Detector
@@ -83,6 +82,13 @@ class access {
 	object o;
 
 public:
+	access() {o.reserve(64);}
+	access(access const& o ) = delete;
+	access(access && o ) = delete;
+	access& operator=(access const& o ) = delete;
+	access& operator=(access && o ) = delete;
+	~access() = default;
+
 	template<typename T>
 	access& operator & (key_value<T> const& kv) {
 		o.emplace_back(std::make_pair(kv.key, record(kv.value)));
@@ -129,18 +135,19 @@ struct value_converter<T, typename std::enable_if<has_record_member<T>::value>::
 template<> struct value_converter<no_data> { static value to_value(no_data v) { return value(); } };
 /// standard types
 #define VAL_CONV(T) template<> struct value_converter<T> { static value to_value(T v) { return value(v); } }
+#define VAL_CONV2(T, T2) template<> struct value_converter<T> { static value to_value(T v) { return value(static_cast<T2>(v)); } }
 VAL_CONV(char const*);
 VAL_CONV(std::string);
 VAL_CONV(double);
 VAL_CONV(bool);
 VAL_CONV(int64_t);
-VAL_CONV(int32_t);
-VAL_CONV(int16_t);
-VAL_CONV(int8_t);
+VAL_CONV2(int32_t, int64_t);
+VAL_CONV2(int16_t, int64_t);
+VAL_CONV2(int8_t, int64_t);
 VAL_CONV(uint64_t);
-VAL_CONV(uint32_t);
-VAL_CONV(uint16_t);
-VAL_CONV(uint8_t);
+VAL_CONV2(uint32_t, uint64_t);
+VAL_CONV2(uint16_t, uint64_t);
+VAL_CONV2(uint8_t, uint64_t);
 VAL_CONV(sc_core::sc_time);
 
 template <typename T>

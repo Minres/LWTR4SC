@@ -21,12 +21,6 @@
 #include <cstring>
 #include <sstream>
 
-#if __cplusplus < 201703L
-#define STD mpark
-#else
-#define STD std
-#endif
-
 namespace lwtr {
 namespace {
 // ----------------------------------------------------------------------------
@@ -53,6 +47,66 @@ struct Writer {
 	inline static Writer &get() {
 		static Writer db;
 		return db;
+	}
+
+	static inline void writeAttribute(uint64_t tx_id, cbor::event_type pos, nonstd::string_view const& name, value const& v){
+		char hier_full_name[1024] = {};
+		if(name.length())
+			strncpy(hier_full_name, name.data(), name.length());
+		writeAttribute(tx_id,  pos, v, hier_full_name,  hier_full_name+name.length());
+	}
+private:
+	static 	inline nonstd::string_view get_full_name(char const* hier_full_name, char* insert_point) {
+		if(insert_point==hier_full_name)
+			return "unnamed";
+		*insert_point=0;
+		return nonstd::string_view(hier_full_name, insert_point-hier_full_name);
+	}
+
+	static void writeAttribute(uint64_t tx_id, cbor::event_type pos, value const& v, char const* hier_full_name, char* insert_point){
+		switch(v.index()){
+		case 0: // no data
+			break;
+		case 1: // std::string
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::STRING, nonstd::get<1>(v));
+			break;
+		case 2: // char*
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::STRING, nonstd::get<2>(v));
+			break;
+		case 3: // double
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::FLOATING_POINT_NUMBER, nonstd::get<3>(v));
+			break;
+		case 4: // bool
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::BOOLEAN, nonstd::get<4>(v));
+			break;
+		case 5: // uint64_t,
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::UNSIGNED, nonstd::get<5>(v));
+			break;
+		case 6: // int64_t,
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::INTEGER, nonstd::get<6>(v));
+			break;
+		case 7: // sc_dt::sc_bv_base
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::BIT_VECTOR, nonstd::get<7>(v).to_string());
+			break;
+		case 8: // sc_dt::sc_lv_base
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::LOGIC_VECTOR, nonstd::get<8>(v).to_string());
+			break;
+		case 9: // sc_core::sc_time
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::TIME, nonstd::get<9>(v).value());
+			break;
+		case 10: // object
+			for(auto& e:nonstd::get<10>(v)) {
+				auto const& name = std::get<0>(e);
+				auto old_insert_point = insert_point;
+				if(insert_point!=hier_full_name)
+					*insert_point='.';
+				auto res = strncpy(++insert_point, name.c_str(), name.length());
+				insert_point+=name.length();
+				writeAttribute(tx_id,  pos, std::get<1>(e), hier_full_name,  insert_point);
+				insert_point=old_insert_point;
+			}
+			break;
+		}
 	}
 };
 // ----------------------------------------------------------------------------
@@ -97,83 +151,6 @@ void tx_fiber_cbf(const tx_fiber& s, callback_reason reason) {
 }
 // ----------------------------------------------------------------------------
 template<typename DB>
-struct value_visitor {
-	uint64_t const tx_id;
-	cbor::event_type const pos;
-
-	mutable char hier_full_name[1024] = {};
-	mutable char* insert_point=hier_full_name;
-
-	value_visitor(uint64_t tx_id, cbor::event_type pos, std::string const& name):tx_id(tx_id), pos(pos) {
-		if(name.length()) strncpy(insert_point, name.c_str(), name.length());
-	}
-
-	const char* get_full_name() const {
-		if(insert_point==hier_full_name)
-			return "unnamed";
-		*insert_point=0;
-		return hier_full_name;
-	}
-
-	void operator()(const lwtr::no_data& v) const {	}
-	void operator()(std::string const& v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::STRING, v);
-	}
-	void operator()(double v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::FLOATING_POINT_NUMBER, v);
-	}
-	void operator()(char const* v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::STRING, v);
-	}
-	void operator()(bool v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::BOOLEAN, v);
-	}
-	void operator()(uint8_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::UNSIGNED, v);
-	}
-	void operator()(uint16_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::UNSIGNED, v);
-	}
-	void operator()(uint32_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::UNSIGNED, v);
-	}
-	void operator()(uint64_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::UNSIGNED, v);
-	}
-	void operator()(int8_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::INTEGER, v);
-	}
-	void operator()(int16_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::INTEGER, v);
-	}
-	void operator()(int32_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::INTEGER, v);
-	}
-	void operator()(int64_t v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::INTEGER, v);
-	}
-	void operator()(sc_dt::sc_bv_base const& v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::BIT_VECTOR, v.to_string());
-	}
-	void operator()(sc_dt::sc_lv_base const& v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::LOGIC_VECTOR, v.to_string());
-	}
-	void operator()(sc_core::sc_time v) const {
-		Writer<DB>::writer().writeAttribute(tx_id, pos, get_full_name(), cbor::data_type::STRING, v.to_string());
-	}
-	void operator()(lwtr::object const& v) const {
-		for(auto& e:v) {
-			auto old_insert_point = insert_point;
-			if(insert_point!=hier_full_name)
-				*insert_point='.';
-			strncpy(++insert_point, std::get<0>(e).c_str(), std::get<0>(e).length());
-			STD ::visit(*this, std::get<1>(e) );
-			insert_point=old_insert_point;
-		}
-	}
-};
-// ----------------------------------------------------------------------------
-template<typename DB>
 void tx_generator_cbf(const tx_generator_base& g, callback_reason reason) {
 	if(Writer<DB>::get().is_open() && reason == CREATE) {
 		Writer<DB>::writer().writeGenerator(g.get_id(), g.get_name(), g.get_tx_fiber().get_id());
@@ -193,10 +170,12 @@ void tx_handle_cbf(const tx_handle& t, callback_reason reason, value const& v) {
 		Writer<DB>::writer().startTransaction(t.get_id(), t.get_tx_generator_base().get_id(),
 				t.get_tx_generator_base().get_tx_fiber().get_id(),
 				t.get_begin_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
-		STD ::visit( value_visitor<DB>(t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
+		//nonstd::visit( value_visitor<DB>(t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
+		Writer<DB>::writeAttribute( t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name(), v);
 	} break;
 	case END: {
-		STD ::visit( value_visitor<DB>(t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
+		Writer<DB>::writeAttribute( t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_begin_attribute_name(), v);
+//		nonstd::visit( value_visitor<DB>(t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
 		Writer<DB>::writer().endTransaction(t.get_id(), t.get_end_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
 	} break;
 	default:;
@@ -211,8 +190,9 @@ void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attribute_na
 		return;
 	if(!Writer<DB>::get().is_open())
 		return;
-	std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
-	STD ::visit( value_visitor<DB>(t.get_id(), cbor::event_type::RECORD,  tmp_str), v);
+//	std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
+//	nonstd::visit( value_visitor<DB>(t.get_id(), cbor::event_type::RECORD,  tmp_str), v);
+	Writer<DB>::writeAttribute( t.get_id(), cbor::event_type::RECORD, attribute_name == nullptr ? "" : attribute_name, v);
 }
 // ----------------------------------------------------------------------------
 template<typename DB>
