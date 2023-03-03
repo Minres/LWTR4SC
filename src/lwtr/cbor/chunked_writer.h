@@ -417,9 +417,8 @@ struct tx_block {
  *   cbor array(*) of tagged chunks, chunks can be
  *     chunk type 0 (info)
  *       cbor tag(6)
- *       array(3);
- *         unsigned - numerator of timescale)
- *         unsigned - denominator of timescale)
+ *       array(2);
+ *         int - timescale (exponent of minimum timestep in seconds)
  *         epoch time - creation time 
  *           cbor tag(1)
  *           unsigned - timestamp
