@@ -202,10 +202,9 @@ struct chunk_writer {
 struct info {
     encoder<memory_writer> enc;
 
-    inline void add_time_scale(uint64_t denominator, uint64_t numerator=1) {
-        enc.start_array(3);
-        enc.write(numerator);
-        enc.write(denominator);
+    inline void add_time_scale(int8_t time_scale) {
+        enc.start_array(2);
+        enc.write(time_scale);
         enc.write_tag(1);
         enc.write(time(nullptr));
     }
@@ -531,8 +530,8 @@ struct chunked_writer  {
 		for(auto e: free_pool_blocks) free(e);
 	}
 
-    inline void writeInfo(uint64_t denominator, uint64_t numerator=1) {
-        inf.add_time_scale(denominator, numerator);
+    inline void writeInfo(int8_t timescale) {
+        inf.add_time_scale(timescale);
         inf.flush(cw);
     }
 

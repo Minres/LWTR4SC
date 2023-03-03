@@ -120,7 +120,9 @@ void tx_db_cbf(tx_db const& _tx_db, callback_reason reason) {
 		}
 		file_name+=".ftr";
 		if(Writer<DB>::get().open(file_name)) {
-		    Writer<DB>::writer().writeInfo(sc_core::sc_time(1, sc_core::SC_SEC)/sc_core::sc_time(1, sc_core::SC_PS));
+			double secs = sc_core::sc_time::from_value(1ULL).to_seconds();
+		    auto exp = rint(log(secs)/log(10.0));
+		    Writer<DB>::writer().writeInfo(static_cast<int8_t>(exp));
 			std::stringstream ss;
 			ss << "opening file " << file_name;
 			SC_REPORT_INFO(__FUNCTION__, ss.str().c_str());
