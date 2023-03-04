@@ -50,7 +50,7 @@ def dump_ftr(file_name_input):
             logger.debug("Found directory chunk")
         elif tag.tag in [12, 13]:
             tx_stream_id = tag.value[0]
-            txchunk = loads(tag.value[1] if tag.tag==12 else lz4.block.decompress(tag.value[2], uncompressed_size=tag.value[1]), tag_hook=tx_tag_cb)
+            txchunk = loads(tag.value[4] if tag.tag==12 else lz4.block.decompress(tag.value[4], uncompressed_size=tag.value[3]), tag_hook=tx_tag_cb)
             logger.debug(f"Found tx chunk of stream id {tag.value[0]}")
         elif tag.tag in [14, 15]:
             relations = loads(tag.value if tag.tag==14 else lz4.block.decompress(tag.value[1], uncompressed_size=tag.value[0]))

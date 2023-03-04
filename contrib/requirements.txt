@@ -1,10 +1,2 @@
-Jinja2
-lz
-dash
-dash-renderer
-dash-table
-pandas
-numpy
-scipy
-PyYAML
-cbor2>=5.4.6 
+lz4
+cbor2 
