@@ -18,6 +18,7 @@
 #include <lz4.h>
 #include <ctime>
 #include <lwtr/lwtr.h>
+
 namespace lwtr {
 namespace cbor {
 enum {
@@ -171,14 +172,13 @@ struct chunk_writer {
 		}
 	}
 
-	void write_chunk(uint64_t type, std::vector<uint8_t> const& data, uint64_t subtype = std::numeric_limits<uint64_t>::max()){
-		if(COMPRESSED && type>INFO_CHUNK_ID) {
-	        enc.write_tag(6+type*2+1); // unassigned tags
-	        if(subtype < std::numeric_limits<uint64_t>::max()) {
-	            enc.start_array(3);
-	            enc.write(subtype);
-	        } else
-	            enc.start_array(2);
+	void write_chunk(uint64_t type, std::vector<uint8_t> const& data, std::vector<uint64_t> const& param = {}){
+	    auto offset = COMPRESSED && type>INFO_CHUNK_ID?1:0;
+	    enc.write_tag(6+type*2+offset); // unassigned tags
+	    enc.start_array(param.size()+offset+1);
+        for(auto p:param)
+            enc.write(p);
+        if(COMPRESSED && type>INFO_CHUNK_ID) {
             enc.write(data.size());
             const int max_dst_size = LZ4_compressBound(data.size());
             uint8_t* compressed_data = (uint8_t*)malloc(max_dst_size);
@@ -189,11 +189,6 @@ struct chunk_writer {
             enc.write(compressed_data, compressed_data_size);
             free(compressed_data);
 		} else {
-	        enc.write_tag(6+type*2); // unassigned tags
-	        if(subtype < std::numeric_limits<uint64_t>::max()) {
-	            enc.start_array(2);
-	            enc.write(subtype);
-	        }
             enc.write(data.data(),  data.size());
 		}
 	}
@@ -202,9 +197,9 @@ struct chunk_writer {
 struct info {
     encoder<memory_writer> enc;
 
-    inline void add_time_scale(int8_t time_scale) {
+    inline void add_time_scale(int8_t timescale) {
         enc.start_array(2);
-        enc.write(time_scale);
+        enc.write(timescale);
         enc.write_tag(1);
         enc.write(time(nullptr));
     }
@@ -353,7 +348,7 @@ struct tx_entry {
 	size_t elem_count{0};
 	uint64_t id{0};
 	uint64_t generator{0};
-	uint64_t stream{0};
+	uint64_t stream_id{0};
 	uint64_t start_time{0}, end_time{0};
 
 	void reset(){
@@ -389,11 +384,14 @@ struct tx_block {
 	encoder<memory_writer> enc;
 	dictionary& dict;
 	const uint64_t stream_id;
+    uint64_t start_time{std::numeric_limits<uint64_t>::max()}, end_time{0};
 	tx_block(dictionary& dict, uint64_t stream_id):dict(dict), stream_id(stream_id){}
 
 	void append(tx_entry& e) {
 		if(enc.is_empty()) enc.start_array();
 		e.append_to(enc);
+		start_time = std::min(start_time, e.start_time);
+		end_time = std::max(end_time, e.end_time);
 	}
 
 	template<bool COMPRESSED>
@@ -401,7 +399,7 @@ struct tx_block {
 		if(enc.is_empty()) return;
 		dict.flush(cw);
 		enc.write_break();
-		cw.write_chunk(TX_CHUNK_ID, enc.buffer, stream_id);
+		cw.write_chunk(TX_CHUNK_ID, enc.buffer, {stream_id, start_time, end_time});
 		enc.buffer.clear();
 	}
 
@@ -437,9 +435,18 @@ struct tx_block {
  *         unsigned - uncompressed size
  *         bytes() - content
  *     chunk type 3 (tx block)
- *       cbor tag(12) (compressed: 13)
- *       array(2)
+ *       cbor tag(12) uncompressed
+ *       array(4)
  *         unsigned - stream id
+ *         unsigned - start_time
+ *         unsigned - end_time
+ *         bytes() - content
+ *       cbor tag(13) compressed
+ *       array(5)
+ *         unsigned - stream id
+ *         unsigned - start_time
+ *         unsigned - end_time
+ *         unsigned - uncompressed data size
  *         bytes() - content
  *     chunk type 4 (tx relationships)
  *       cbor tag(14) (compressed: 15)
@@ -560,14 +567,14 @@ struct chunked_writer  {
 		txs[id] = e;
 		e->id = id;
 		e->generator = generator;
-		e->stream = stream;
+		e->stream_id = stream;
 		e->start_time = time;
 	}
 
 	inline void endTransaction(uint64_t id, uint64_t time) {
 		auto e = txs[id];
 		e->end_time = time;
-		auto* block = fiber_blocks[e->stream].get();
+		auto* block = fiber_blocks[e->stream_id].get();
 		block->append(*e);
 		if(block->size()>MAX_TXBUFFER_SIZE){
 			block->flush(cw);
