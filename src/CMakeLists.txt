@@ -35,4 +35,24 @@ else()
     target_include_directories (lwtr PUBLIC ${SystemC_INCLUDE_DIRS})    
     target_link_libraries(lwtr PUBLIC ${SystemC_LIBRARIES} )
 endif()
-target_link_libraries (lwtr PUBLIC fmt::fmt)
+target_link_libraries (lwtr PRIVATE fmt::fmt)
+
+set_target_properties(lwtr PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    FRAMEWORK FALSE
+    PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/lwtr/lwtr.h
+)
+
+install(TARGETS lwtr
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}${SCC_LIBRARY_DIR_MODIFIER}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}${SCC_LIBRARY_DIR_MODIFIER}${SCC_ARCHIVE_DIR_MODIFIER}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lwtr
+        )
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/nonstd
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} # target directory
+        FILES_MATCHING # install only matched files
+        PATTERN "*.h" # select header files
+        )
+
+
