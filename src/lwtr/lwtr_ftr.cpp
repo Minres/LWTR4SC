@@ -199,15 +199,15 @@ void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attribute_na
 // ----------------------------------------------------------------------------
 template<typename DB>
 void tx_handle_relation_cbf(const tx_handle& tr_1, const tx_handle& tr_2, tx_relation_handle relation_handle) {
-	if(tr_1.get_tx_fiber().get_tx_db() == nullptr)
+    auto const& f_1 = tr_1.get_tx_fiber();
+	if(f_1.get_tx_db() == nullptr)
 		return;
-	if(tr_1.get_tx_fiber().get_tx_db()->get_recording() == false)
-		return;
-	if(!Writer<DB>::get().is_open())
+	if(f_1.get_tx_db()->get_recording() == false)
 		return;
 	if(Writer<DB>::get().is_open()) {
-		Writer<DB>::writer().writeRelation(tr_1.get_tx_fiber().get_tx_db()->get_relation_name(relation_handle), tr_1.get_id(),
-							tr_2.get_id());
+	    auto const& f_2 = tr_1.get_tx_fiber();
+		Writer<DB>::writer().writeRelation(f_1.get_tx_db()->get_relation_name(relation_handle), f_1.get_id(), tr_1.get_id(),
+							f_2.get_id(), tr_2.get_id());
 	}
 }
 // ----------------------------------------------------------------------------
