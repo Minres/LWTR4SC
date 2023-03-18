@@ -20,19 +20,19 @@ def dump_ftr(file_name_input):
                 print(f"trans id:{txtag.value[0]}, gen:{txtag.value[1]}, start:{txtag.value[2]}, end:{txtag.value[3]}")
             elif txtag.tag == 7: # begin attr
                 attr_name = strings[txtag.value[0]]
-                if txtag.value[1] in [12, 1]:
+                if txtag.value[1] in [10, 1]:
                     print(f"  battr {attr_name}, type_id:{txtag.value[1]}, value:{strings[txtag.value[2]]}")
                 else:
                     print(f"  battr {attr_name}, type_id:{txtag.value[1]}, value:{txtag.value[2]}")
             elif txtag.tag == 8: # record attr
                 attr_name = strings[txtag.value[0]]
-                if txtag.value[1] in [12, 1]:
+                if txtag.value[1] in [10, 1]:
                     print(f"  rattr {attr_name}, type_id:{txtag.value[1]}, value:{strings[txtag.value[2]]}")
                 else:
                     print(f"  rattr {attr_name}, type_id:{txtag.value[1]}, value:{txtag.value[2]}")
             elif txtag.tag == 9: # end attr
                 attr_name = strings[txtag.value[0]]
-                if txtag.value[1] in [12, 1]:
+                if txtag.value[1] in [10, 1]:
                     print(f"  eattr {attr_name}, type_id:{txtag.value[1]}, value:{strings[txtag.value[2]]}")
                 else:
                     print(f"  eattr {attr_name}, type_id:{txtag.value[1]}, value:{txtag.value[2]}")
@@ -50,7 +50,7 @@ def dump_ftr(file_name_input):
             logger.debug("Found directory chunk")
         elif tag.tag in [12, 13]:
             tx_stream_id = tag.value[0]
-            txchunk = loads(tag.value[4] if tag.tag==12 else lz4.block.decompress(tag.value[4], uncompressed_size=tag.value[3]), tag_hook=tx_tag_cb)
+            txchunk = loads(tag.value[3] if tag.tag==12 else lz4.block.decompress(tag.value[4], uncompressed_size=tag.value[3]), tag_hook=tx_tag_cb)
             logger.debug(f"Found tx chunk of stream id {tag.value[0]}")
         elif tag.tag in [14, 15]:
             relations = loads(tag.value if tag.tag==14 else lz4.block.decompress(tag.value[1], uncompressed_size=tag.value[0]))
