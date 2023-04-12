@@ -109,7 +109,7 @@ The compressed tx block chunk is denoted by CBOR tag 13 followed by an array hav
 * unsigned integer denoting the uncompressed size of the   
 * encoded CBOR data item (a byte string) holding the LZ4 compressed content of the tx block
 
-Indicating the stream id, start, and end time allows to quickly skipe over the tx blocks if only a specific stream is of interest.
+Indicating the stream id, start, and end time allows to quickly skip over the tx blocks if only a specific stream is of interest.
 
 The tx block content itself is structured as an indefinite-length array conisting of:
 
@@ -130,7 +130,7 @@ The tx block content itself is structured as an indefinite-length array conistin
 
 The data type is encoded as follows:
 
-| id | name                         | C++/SystemC data type                                             | reporesented as           |
+| id | name                         | C++/SystemC data type                                             | represented as            |
 |----|------------------------------|-------------------------------------------------------------------|---------------------------|
 |  0 | BOOLEAN                      | bool                                                              | unsigned int              |
 |  1 | ENUMERATION                  | enum                                                              | unsigned int (string id)  |
