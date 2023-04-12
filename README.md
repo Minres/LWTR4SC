@@ -25,3 +25,143 @@ In particular:
 * std::function<void(tx_handle const&, tx_handle const&, tx_relation_handle)> to create the relationship between trnasactions in the backend
 
 An example of a simple text format can be found at lwtr/lwtr_text.cpp
+Additionally a new binary format called '**F**ast **T**ransaction **R**ecording' has been implemented.
+
+# **F**ast **T**ransaction **R**ecording (FTR) format description
+
+FTR uses Concise Binary Object Representation (CBOR) according to RFC 8949 as the storage encoding.
+CBOR documentation and related information can be found at [cbor.io](https://cbor.io/).
+
+FTR consists of a seqence of chunks starting with an info chunk.
+Each chunk consists of a CBOR tag, a header and  a payload where the payload may  be compressed using lz4.
+
+The following chunks are used within a FTR database.
+
+## info chunk
+
+The info chunk is denoted by CBOR tag 6 followed by an array having 2 entries:
+
+* integer denoting the timescale
+  
+  The timescale is encoded as the exponent of the multiplier for all timestamps.
+  All timestamps in the FTR are multiples of this.
+  E.g. a value of -6 means a tiemscale multiplier of 1e-6 or 1µs. 
+  
+* an epoch denoting creation time
+
+  The [epoch](https://www.rfc-editor.org/rfc/rfc8949.html#epochdatetimesect) is a CBOR type and encoded as a tagged float or integer.
+  This value denotes the time of creation of the FTR and is independent of the file or transmission date
+  
+  
+## dictionary chunk
+
+Strings are encoded as numeric ids to save space.
+The dictionary provides this mapping in the form of an map where the index is used as a key.
+There can be several dictionary chunks in a file since strings need to be dfined before referencing them.
+All chunks form a single map, keys are guaranteedt to be unique, they might be consecutive numbers.
+
+The uncompressed dictionary chunk is denoted be CBOR tag 8 followed by an [encoded CBOR data item](https://www.rfc-editor.org/rfc/rfc8949.html#embedded-di).
+
+The compressed dictionary chunk is denoted by CBOR tag 9 followed by an array having 2 entries:
+
+* unsigned integer denoting the uncompressed size of the content 
+* encoded CBOR data item (a byte string) holding the LZ4 compressed content of the dictionary
+
+The data item itself is an [indefinite length map](https://www.rfc-editor.org/rfc/rfc8949.html#name-indefinite-length-arrays-an) (major type 5) having a pairs of unsigned and string as entries.
+
+## directory chunk
+
+The uncompressed directory chunk is denoted be CBOR tag 10 followed by an [encoded CBOR data item](https://www.rfc-editor.org/rfc/rfc8949.html#embedded-di) holding the content.
+
+The compressed directory chunk is denoted by CBOR tag 11 followed by an array having 2 entries:
+
+* unsigned integer denoting the uncompressed size of the   
+* encoded CBOR data item (a byte string) holding the LZ4 compressed content of the directory
+
+The directory content itself is structured as an indefinite-length array conisting of:
+
+* a stream entry denoted by CBOR tag 16 followed by an array of size 3:
+  
+    * unsigned integer denoting the id
+    * unsigned integer denoting name of the stream (as dictonary id)
+    * unsigned integer denoting kind (as dictonary id)
+  
+* a generator entry denoted by CBOR tag 17 followed by an array of size 3:
+  
+    * unsigned integer denoting the id
+    * unsigned integer denoting name of the stream (as dictonary id)
+    * unsigned integer denoting stream the generator belongs to
+
+## tx block chunk
+
+The uncompressed tx block chunk is denoted be CBOR tag 12 followed by an array having 4 entries:
+
+* unsigned integer denoting the stream id this block belongs to
+* unsigned integer denoting the start_time (a tiome stamp)
+* unsigned integer denoting the end_time (a tiome stamp)
+* encoded CBOR data item (a byte string) holding the content of the tx block
+
+The compressed tx block chunk is denoted by CBOR tag 13 followed by an array having 5 entries:
+
+* unsigned integer denoting the stream id this block belongs to
+* unsigned integer denoting the start_time (a tiome stamp)
+* unsigned integer denoting the end_time (a tiome stamp)
+* unsigned integer denoting the uncompressed size of the   
+* encoded CBOR data item (a byte string) holding the LZ4 compressed content of the tx block
+
+Indicating the stream id, start, and end time allows to quickly skipe over the tx blocks if only a specific stream is of interest.
+
+The tx block content itself is structured as an indefinite-length array conisting of:
+
+* an array of transactions with the following elements:
+    
+    * element with CBOR tag 6 (event) followed by an array of size 4:
+
+        * unsigned integer denoting the id of the transaction
+        * unsigned integer denoting the id of the generator creating this transaction
+        * unsigned integer denoting the start time (time stamp)
+        * unsigned integer denoting the end time (time stamp)
+
+    * element with the CBOR tag 7, 8, and 9 (begin, record, end attribute) followed by an array of size 3
+
+        * unsigned integer denoting the name (as dictonary id)
+        * unsigned integer denoting the data type.
+        * signed integer, unsigned integer or double denotiung the value (depending on data type)
+
+The data type is encoded as follows:
+
+| id | name                         | C++/SystemC data type                                             | reporesented as           |
+|----|------------------------------|-------------------------------------------------------------------|---------------------------|
+|  0 | BOOLEAN                      | bool                                                              | unsigned int              |
+|  1 | ENUMERATION                  | enum                                                              | unsigned int (string id)  |
+|  2 | INTEGER                      | char, short, int, long, long long, sc_int, sc_bigint              | unsigned int              |
+|  3 | UNSIGNED                     | unsigned [char, short, int, long, long long], sc_uint, sc_biguint | unsigned int              |
+|  4 | FLOATING_POINT_NUMBER        | float, double                                                     | double                    |
+|  5 | BIT_VECTOR                   | sc_bit, sc_bv                                                     | unsigned int (string id)  |
+|  6 | LOGIC_VECTOR                 | sc_logic, sc_lv                                                   | unsigned int (string id)  |
+|  7 | FIXED_POINT_INTEGER          | sc_fixed                                                          | double                    |
+|  8 | UNSIGNED_FIXED_POINT_INTEGER | sc_ufixed                                                         | double                    |
+|  9 | POINTER                      | void*                                                             | unsigned int              |
+| 10 | STRING                       | string, std::string                                               | unsigned int (string id)  |
+| 11 | TIME                         | sc_time                                                           | unsigned int (time stamp) |
+
+## relationship chunk
+
+The uncompressed relationship chunk is denoted be CBOR tag 14 followed by an [encoded CBOR data item](https://www.rfc-editor.org/rfc/rfc8949.html#embedded-di) holding the content.
+
+The compressed relationship chunk is denoted by CBOR tag 15 followed by an array having 2 entries:
+
+* unsigned integer denoting the uncompressed size of the   
+* encoded CBOR data item (a byte string) holding the LZ4 compressed content of the relationship
+
+The relationship content itself is structured as an indefinite-length array consisting of:
+
+* array of size 5 denoting a relation and consisting of
+
+    * unsigned integer denoting the name (id of string)
+    * unsigned integer denoting the source tx id
+    * unsigned integer denoting the sink tx id
+    * unsigned integer denoting the source stream id
+    * unsigned integer denoting the sink stream id
+    
+
