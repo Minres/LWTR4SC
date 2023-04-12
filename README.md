@@ -5,13 +5,13 @@ It follows the approach there but implements it using modern C++. Therefore it r
 
 # Structure
 
-LWTR4SC provides an API to which allows to define what to record (the 'frontend') and an API how to record it (the 'backend').
+LWTR4SC provides an API to define what to record (the "frontend") and how to record it (the "backend").
 
-The classes and functions to define what to record are defined in lwtr.h and located in the namespace lwtr.
+The frontend classes and functions to define what to record are defined in lwtr.h and is located in the namespace lwtr. 
 The hierarchy is as follows:
-* a tx_db is the database holding all txfiber
-* a tx_fiber is a stream of transaction (similar to a signal or wire in a wave form database) holding tx_generators
-* a tx_generator is the creator of transactions and thus defines the type(s) of transactions. It can hold transaction attributes.
+* a tx_db is the database holding all tx_fiber.
+* a tx_fiber is a stream of transaction (similar to a signal or wire in a wave form database) holding tx_generators.
+* a tx_generator creates transactions and defines their types. It can hold transaction attributes.
 * a tx_hanlde represents the transaction in the database. It allows to create named relations between transactions.
 
 The API on how to record transactions is realized using callback functions.
@@ -24,8 +24,9 @@ In particular:
 * std::function<void(tx_handle const&, char const*, value const&)> to record attributes independend of start and end
 * std::function<void(tx_handle const&, tx_handle const&, tx_relation_handle)> to create the relationship between trnasactions in the backend
 
-An example of a simple text format can be found at lwtr/lwtr_text.cpp
-Additionally a new binary format called '**F**ast **T**ransaction **R**ecording' has been implemented.
+The library supports recording transactions in two formats. 
+The first is a simple text format that can be found at lwtr/lwtr_text.cpp. 
+The second is a new binary format called '**F**ast **T**ransaction **R**ecording'.
 
 # **F**ast **T**ransaction **R**ecording (FTR) format description
 
@@ -33,7 +34,7 @@ FTR uses Concise Binary Object Representation (CBOR) according to RFC 8949 as th
 CBOR documentation and related information can be found at [cbor.io](https://cbor.io/).
 
 FTR consists of a seqence of chunks starting with an info chunk.
-Each chunk consists of a CBOR tag, a header and  a payload where the payload may  be compressed using lz4.
+Each chunk consists of a CBOR tag, a header and a payload where the payload may be compressed using lz4.
 
 The following chunks are used within a FTR database.
 
@@ -55,9 +56,8 @@ The info chunk is denoted by CBOR tag 6 followed by an array having 2 entries:
   
 ## dictionary chunk
 
-Strings are encoded as numeric ids to save space.
-The dictionary provides this mapping in the form of an map where the index is used as a key.
-There can be several dictionary chunks in a file since strings need to be dfined before referencing them.
+The dictionary chunk provides a mapping between numeric ids and strings to save space.
+There can be several dictionary chunks in a file since strings need to be defined before referencing them.
 All chunks form a single map, keys are guaranteedt to be unique, they might be consecutive numbers.
 
 The uncompressed dictionary chunk is denoted be CBOR tag 8 followed by an [encoded CBOR data item](https://www.rfc-editor.org/rfc/rfc8949.html#embedded-di).
