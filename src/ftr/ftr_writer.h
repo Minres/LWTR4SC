@@ -249,14 +249,25 @@ struct dictionary {
 	std::unordered_map<char const*, size_t, char_hash, char_equal_to> lut;
 	size_t flushed_idx{0}, unflushed_size{1};
 
-	size_t get_key(nonstd::string_view const& str) {
-		if(!str.length()) return 0;
-		auto it = lut.find(str.data());
+    size_t get_key(nonstd::string_view const& str) {
+        if(!str.length()) return 0;
+        auto it = lut.find(str.data());
+        if(it!=std::end(lut))
+            return it->second;
+        out_dict.push_back(nonstd::to_string(str));
+        lut.insert({out_dict.back().c_str(), out_dict.size()-1});
+        unflushed_size += str.size();
+        return out_dict.size()-1;
+    }
+
+	size_t get_key(char const* str) {
+		if(!strlen(str)) return 0;
+		auto it = lut.find(str);
 		if(it!=std::end(lut))
 			return it->second;
-		out_dict.push_back(nonstd::to_string(str));
+		out_dict.push_back(std::string(str));
 		lut.insert({out_dict.back().c_str(), out_dict.size()-1});
-		unflushed_size += str.size();
+		unflushed_size += out_dict.back().size();
 		return out_dict.size()-1;
 	}
 
