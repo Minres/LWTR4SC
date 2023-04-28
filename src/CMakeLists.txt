@@ -2,6 +2,9 @@ find_package(ZLIB QUIET)
 find_package(lz4 QUIET)
 find_package(fmt QUIET)
 
+add_library(ftr INTERFACE)
+target_include_directories(ftr INTERFACE .)
+
 set(SOURCES lwtr/lwtr.cpp lwtr/lwtr_text.cpp)
 if(TARGET lz4::lz4)
 	list(APPEND SOURCES lwtr/util/lz4_streambuf.cpp)
