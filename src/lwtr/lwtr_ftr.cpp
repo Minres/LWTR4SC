@@ -14,8 +14,8 @@
  * limitations under the License.
  *******************************************************************************/
 
-#include "cbor/chunked_writer.h"
 #include "lwtr.h"
+#include <ftr/ftr_writer.h>
 #include <sysc/utils/sc_report.h>
 #include <numeric>
 #include <cstring>
@@ -49,7 +49,7 @@ struct Writer {
 		return db;
 	}
 
-	static inline void writeAttribute(uint64_t tx_id, cbor::event_type pos, nonstd::string_view const& name, value const& v){
+	static inline void writeAttribute(uint64_t tx_id, ftr::event_type pos, nonstd::string_view const& name, value const& v){
 		char hier_full_name[1024] = {};
 		if(name.length())
 			strncpy(hier_full_name, name.data(), name.length());
@@ -63,36 +63,36 @@ private:
 		return nonstd::string_view(hier_full_name, insert_point-hier_full_name);
 	}
 
-	static void writeAttribute(uint64_t tx_id, cbor::event_type pos, value const& v, char const* hier_full_name, char* insert_point){
+	static void writeAttribute(uint64_t tx_id, ftr::event_type pos, value const& v, char const* hier_full_name, char* insert_point){
 		switch(v.index()){
 		case 0: // no data
 			break;
 		case 1: // std::string
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::STRING, nonstd::get<1>(v));
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::STRING, nonstd::get<1>(v));
 			break;
 		case 2: // char*
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::STRING, nonstd::get<2>(v));
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::STRING, nonstd::get<2>(v));
 			break;
 		case 3: // double
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::FLOATING_POINT_NUMBER, nonstd::get<3>(v));
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::FLOATING_POINT_NUMBER, nonstd::get<3>(v));
 			break;
 		case 4: // bool
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::BOOLEAN, nonstd::get<4>(v));
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::BOOLEAN, nonstd::get<4>(v));
 			break;
 		case 5: // uint64_t,
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::UNSIGNED, nonstd::get<5>(v));
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::UNSIGNED, nonstd::get<5>(v));
 			break;
 		case 6: // int64_t,
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::INTEGER, nonstd::get<6>(v));
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::INTEGER, nonstd::get<6>(v));
 			break;
 		case 7: // sc_dt::sc_bv_base
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::BIT_VECTOR, nonstd::get<7>(v).to_string());
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::BIT_VECTOR, nonstd::get<7>(v).to_string());
 			break;
 		case 8: // sc_dt::sc_lv_base
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::LOGIC_VECTOR, nonstd::get<8>(v).to_string());
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::LOGIC_VECTOR, nonstd::get<8>(v).to_string());
 			break;
 		case 9: // sc_core::sc_time
-			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), cbor::data_type::TIME, nonstd::get<9>(v).value());
+			writer().writeAttribute(tx_id, pos, get_full_name(hier_full_name, insert_point), ftr::data_type::TIME, nonstd::get<9>(v).value());
 			break;
 		case 10: // object
 			for(auto& e:nonstd::get<10>(v)) {
@@ -172,12 +172,12 @@ void tx_handle_cbf(const tx_handle& t, callback_reason reason, value const& v) {
 		Writer<DB>::writer().startTransaction(t.get_id(), t.get_tx_generator_base().get_id(),
 				t.get_tx_generator_base().get_tx_fiber().get_id(),
 				t.get_begin_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
-		//nonstd::visit( value_visitor<DB>(t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
-		Writer<DB>::writeAttribute( t.get_id(), cbor::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name(), v);
+		//nonstd::visit( value_visitor<DB>(t.get_id(), ftr::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
+		Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name(), v);
 	} break;
 	case END: {
-		Writer<DB>::writeAttribute( t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_begin_attribute_name(), v);
-//		nonstd::visit( value_visitor<DB>(t.get_id(), cbor::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
+		Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::END, t.get_tx_generator_base().get_begin_attribute_name(), v);
+//		nonstd::visit( value_visitor<DB>(t.get_id(), ftr::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
 		Writer<DB>::writer().endTransaction(t.get_id(), t.get_end_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
 	} break;
 	default:;
@@ -193,8 +193,8 @@ void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attribute_na
 	if(!Writer<DB>::get().is_open())
 		return;
 //	std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
-//	nonstd::visit( value_visitor<DB>(t.get_id(), cbor::event_type::RECORD,  tmp_str), v);
-	Writer<DB>::writeAttribute( t.get_id(), cbor::event_type::RECORD, attribute_name == nullptr ? "" : attribute_name, v);
+//	nonstd::visit( value_visitor<DB>(t.get_id(), ftr::event_type::RECORD,  tmp_str), v);
+	Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::RECORD, attribute_name == nullptr ? "" : attribute_name, v);
 }
 // ----------------------------------------------------------------------------
 template<typename DB>
@@ -215,19 +215,19 @@ void tx_handle_relation_cbf(const tx_handle& tr_1, const tx_handle& tr_2, tx_rel
 // ----------------------------------------------------------------------------
 void tx_ftr_init(bool compressed) {
 	if(compressed) {
-		tx_db::register_class_cb(tx_db_cbf<cbor::chunked_writer<true>>);
-		tx_fiber::register_class_cb(tx_fiber_cbf<cbor::chunked_writer<true>>);
-		tx_generator_base::register_class_cb(tx_generator_cbf<cbor::chunked_writer<true>>);
-		tx_handle::register_class_cb(tx_handle_cbf<cbor::chunked_writer<true>>);
-		tx_handle::register_record_attribute_cb(tx_handle_record_attribute_cbf<cbor::chunked_writer<true>>);
-		tx_handle::register_relation_cb(tx_handle_relation_cbf<cbor::chunked_writer<true>>);
+		tx_db::register_class_cb(tx_db_cbf<ftr::ftr_writer<true>>);
+		tx_fiber::register_class_cb(tx_fiber_cbf<ftr::ftr_writer<true>>);
+		tx_generator_base::register_class_cb(tx_generator_cbf<ftr::ftr_writer<true>>);
+		tx_handle::register_class_cb(tx_handle_cbf<ftr::ftr_writer<true>>);
+		tx_handle::register_record_attribute_cb(tx_handle_record_attribute_cbf<ftr::ftr_writer<true>>);
+		tx_handle::register_relation_cb(tx_handle_relation_cbf<ftr::ftr_writer<true>>);
 	} else {
-		tx_db::register_class_cb(tx_db_cbf<cbor::chunked_writer<false>>);
-		tx_fiber::register_class_cb(tx_fiber_cbf<cbor::chunked_writer<false>>);
-		tx_generator_base::register_class_cb(tx_generator_cbf<cbor::chunked_writer<false>>);
-		tx_handle::register_class_cb(tx_handle_cbf<cbor::chunked_writer<false>>);
-		tx_handle::register_record_attribute_cb(tx_handle_record_attribute_cbf<cbor::chunked_writer<false>>);
-		tx_handle::register_relation_cb(tx_handle_relation_cbf<cbor::chunked_writer<false>>);
+		tx_db::register_class_cb(tx_db_cbf<ftr::ftr_writer<false>>);
+		tx_fiber::register_class_cb(tx_fiber_cbf<ftr::ftr_writer<false>>);
+		tx_generator_base::register_class_cb(tx_generator_cbf<ftr::ftr_writer<false>>);
+		tx_handle::register_class_cb(tx_handle_cbf<ftr::ftr_writer<false>>);
+		tx_handle::register_record_attribute_cb(tx_handle_record_attribute_cbf<ftr::ftr_writer<false>>);
+		tx_handle::register_relation_cb(tx_handle_relation_cbf<ftr::ftr_writer<false>>);
 	}
 }
 } // namespace lwtr

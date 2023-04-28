@@ -1,12 +1,21 @@
-/*
- * cbor.h
+/*******************************************************************************
+ * Copyright 2023 MINRES Technologies GmbH
  *
- *  Created on: Feb 7, 2023
- *      Author: eyckj
- */
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 
-#ifndef OSCI_LIB_SCC_SRC_SYSC_SCC_CBOR_H_
-#define OSCI_LIB_SCC_SRC_SYSC_SCC_CBOR_H_
+#ifndef FTR_FTR_WRITER_H
+#define FTR_FTR_WRITER_H
 
 #include <fstream>
 #include <vector>
@@ -17,10 +26,9 @@
 #include <unordered_map>
 #include <lz4.h>
 #include <ctime>
-#include <lwtr/lwtr.h>
+#include <nonstd/string_view.hpp>
 
-namespace lwtr {
-namespace cbor {
+namespace ftr {
 enum {
 	MAX_TXBUFFER_SIZE=1<<16,
 	MAX_REL_SIZE=1<<16,
@@ -175,9 +183,11 @@ struct chunk_writer {
 	void write_chunk(uint64_t type, std::vector<uint8_t> const& data, std::vector<uint64_t> const& param = {}){
 	    auto offset = COMPRESSED && type>INFO_CHUNK_ID?1:0;
 	    enc.write_tag(6+type*2+offset); // unassigned tags
-	    enc.start_array(param.size()+offset+1);
-        for(auto p:param)
-            enc.write(p);
+        if(offset || param.size()) {
+	        enc.start_array(param.size()+offset+1);
+            for(auto p:param)
+                enc.write(p);
+        }
         if(COMPRESSED && type>INFO_CHUNK_ID) {
             enc.write(data.size());
             const int max_dst_size = LZ4_compressBound(data.size());
@@ -521,7 +531,7 @@ enum class data_type {
 };
 
 template<bool COMPRESSED=false>
-struct chunked_writer  {
+struct ftr_writer  {
 
 	chunk_writer<COMPRESSED> cw;
 	info inf;
@@ -533,9 +543,9 @@ struct chunked_writer  {
 	std::vector<tx_entry*> free_pool;
 	std::vector<void*> free_pool_blocks;
 
-	chunked_writer(const std::string& name): cw(name){}
+	ftr_writer(const std::string& name): cw(name){}
 
-	~chunked_writer() {
+	~ftr_writer() {
 		dict.flush(cw);
 		dir.flush(cw);
 		for(auto&e: txs)
@@ -618,6 +628,5 @@ struct chunked_writer  {
 		}
 	}
 };
-} // namespace cbor
-} // namespace lwtr
-#endif /* OSCI_LIB_SCC_SRC_SYSC_SCC_CBOR_H_ */
+} // namespace ftr
+#endif /* FTR_FTR_WRITER_H */
