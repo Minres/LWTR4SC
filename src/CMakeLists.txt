@@ -54,8 +54,7 @@ install(TARGETS lwtr
         )
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/nonstd
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} # target directory
-        FILES_MATCHING # install only matched files
-        PATTERN "*.h" # select header files
+        FILES_MATCHING PATTERN "*.hpp" # select header files
         )
 
 
