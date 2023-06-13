@@ -172,12 +172,10 @@ void tx_handle_cbf(const tx_handle& t, callback_reason reason, value const& v) {
 		Writer<DB>::writer().startTransaction(t.get_id(), t.get_tx_generator_base().get_id(),
 				t.get_tx_generator_base().get_tx_fiber().get_id(),
 				t.get_begin_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
-		//nonstd::visit( value_visitor<DB>(t.get_id(), ftr::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name()), v);
 		Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name(), v);
 	} break;
 	case END: {
-		Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::END, t.get_tx_generator_base().get_begin_attribute_name(), v);
-//		nonstd::visit( value_visitor<DB>(t.get_id(), ftr::event_type::END, t.get_tx_generator_base().get_end_attribute_name()), v);
+		Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::END, t.get_tx_generator_base().get_end_attribute_name(), v);
 		Writer<DB>::writer().endTransaction(t.get_id(), t.get_end_sc_time()/sc_core::sc_time(1, sc_core::SC_PS));
 	} break;
 	default:;
@@ -192,8 +190,6 @@ void tx_handle_record_attribute_cbf(tx_handle const& t, const char* attribute_na
 		return;
 	if(!Writer<DB>::get().is_open())
 		return;
-//	std::string tmp_str = attribute_name == nullptr ? "" : attribute_name;
-//	nonstd::visit( value_visitor<DB>(t.get_id(), ftr::event_type::RECORD,  tmp_str), v);
 	Writer<DB>::writeAttribute( t.get_id(), ftr::event_type::RECORD, attribute_name == nullptr ? "" : attribute_name, v);
 }
 // ----------------------------------------------------------------------------
