@@ -559,8 +559,12 @@ struct ftr_writer  {
 	~ftr_writer() {
 		dict.flush(cw);
 		dir.flush(cw);
-		for(auto&e: txs)
-			endTransaction(e.first, 0);
+		for(auto&t: txs) {
+		    auto e = t.second;
+	        e->end_time = time;
+	        fiber_blocks[e->stream_id].get()->append(*e);
+		}
+		txs.clear();
 		for(auto& block: fiber_blocks)
 			if(block)
 				block->flush(cw);
