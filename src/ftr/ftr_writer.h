@@ -561,7 +561,7 @@ struct ftr_writer  {
 		dir.flush(cw);
 		for(auto&t: txs) {
 		    auto e = t.second;
-	        e->end_time = time;
+	        e->end_time = e->start_time;
 	        fiber_blocks[e->stream_id].get()->append(*e);
 		}
 		txs.clear();
