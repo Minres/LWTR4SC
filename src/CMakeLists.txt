@@ -3,7 +3,10 @@ find_package(lz4 QUIET)
 find_package(fmt QUIET)
 
 add_library(ftr INTERFACE)
-target_include_directories(ftr INTERFACE .)
+target_include_directories(ftr INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # for headers when building
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> # for client in install mode
+)
 
 set(SOURCES lwtr/lwtr.cpp lwtr/lwtr_text.cpp)
 if(TARGET lz4::lz4)
@@ -12,7 +15,10 @@ if(TARGET lz4::lz4)
 endif()
 
 add_library (lwtr ${SOURCES})
-target_include_directories(lwtr PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(lwtr PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> # for headers when building
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> # for client in install mode
+)
 if(TARGET ZLIB::ZLIB)
     target_compile_definitions(lwtr PRIVATE WITH_ZLIB)
 	target_link_libraries (lwtr PUBLIC ZLIB::ZLIB)
@@ -46,12 +52,36 @@ set_target_properties(lwtr PROPERTIES
     PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/lwtr/lwtr.h
 )
 
-install(TARGETS lwtr
+install(TARGETS lwtr EXPORT lwtr-targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}${SCC_LIBRARY_DIR_MODIFIER}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}${SCC_LIBRARY_DIR_MODIFIER}${SCC_ARCHIVE_DIR_MODIFIER}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lwtr
         )
+
+set(LWTR_CMAKE_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/lwtr)
+include(CMakePackageConfigHelpers)
+
+install(EXPORT lwtr-targets
+    DESTINATION ${LWTR_CMAKE_CONFIG_DIR})
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/lwtr-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_LIST_DIR}/lwtr-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/lwtr-config.cmake
+    INSTALL_DESTINATION ${LWTR_CMAKE_CONFIG_DIR}
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/lwtr-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/lwtr-config-version.cmake
+    DESTINATION ${LWTR_CMAKE_CONFIG_DIR})
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/nonstd
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} # target directory
         FILES_MATCHING PATTERN "*.hpp" # select header files
