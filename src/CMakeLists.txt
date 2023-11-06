@@ -59,6 +59,11 @@ install(TARGETS lwtr EXPORT lwtr-targets
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lwtr
         )
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/nonstd
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} # target directory
+        FILES_MATCHING PATTERN "*.hpp" # select header files
+        )
+
 set(LWTR_CMAKE_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/lwtr)
 include(CMakePackageConfigHelpers)
 
@@ -81,10 +86,3 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/lwtr-config.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/lwtr-config-version.cmake
     DESTINATION ${LWTR_CMAKE_CONFIG_DIR})
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/nonstd
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} # target directory
-        FILES_MATCHING PATTERN "*.hpp" # select header files
-        )
-
-
