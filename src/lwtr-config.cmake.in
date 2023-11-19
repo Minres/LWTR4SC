@@ -7,6 +7,7 @@ find_dependency(ZLIB)
 
 if(NOT TARGET lwtr::lwtr)
     include("${CMAKE_CURRENT_LIST_DIR}/lwtr-targets.cmake")
+    add_library(lwtr::lwtr ALIAS lwtr)
 endif()
 
 set(lwtr_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
