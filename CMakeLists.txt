@@ -1,7 +1,7 @@
 ###############################################################################
 # 
 ###############################################################################
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 project(lwtr4sc)
 
 if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
