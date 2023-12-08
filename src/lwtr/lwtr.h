@@ -140,11 +140,15 @@ VAL_CONV(char const*);
 VAL_CONV(std::string);
 VAL_CONV(double);
 VAL_CONV(bool);
+#if !defined(_MSC_VER)
 VAL_CONV(int64_t);
+#endif
 VAL_CONV2(int32_t, int64_t);
 VAL_CONV2(int16_t, int64_t);
 VAL_CONV2(int8_t, int64_t);
+#if !defined(_MSC_VER)
 VAL_CONV(uint64_t);
+#endif
 VAL_CONV2(uint32_t, uint64_t);
 VAL_CONV2(uint16_t, uint64_t);
 VAL_CONV2(uint8_t, uint64_t);
