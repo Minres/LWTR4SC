@@ -15,11 +15,13 @@
  *******************************************************************************/
 
 #include "lwtr.h"
+#include <array>
 #include <cstring>
 #include <ftr/ftr_writer.h>
 #include <numeric>
 #include <sstream>
 #include <sysc/utils/sc_report.h>
+#include <cstdint>
 
 namespace lwtr {
 namespace {
@@ -29,7 +31,7 @@ template <typename WRITER> struct Writer {
     Writer(const std::string& name)
     : output_writer(new WRITER(name)) {}
 
-    Writer() {}
+    Writer() = default;
 
     inline bool open(const std::string& name) {
         output_writer.reset(new WRITER(name));
@@ -48,18 +50,19 @@ template <typename WRITER> struct Writer {
     }
 
     static inline void writeAttribute(uint64_t tx_id, ftr::event_type pos, nonstd::string_view const& name, value const& v) {
-        char hier_full_name[1024] = {};
+        std::array<char, 1024> hier_full_name;
         if(name.length())
-            strncpy(hier_full_name, name.data(), name.length());
-        writeAttribute(tx_id, pos, v, hier_full_name, hier_full_name + name.length());
+            strncpy(hier_full_name.data(), name.data(), name.length());
+        writeAttribute(tx_id, pos, v, hier_full_name.data(), hier_full_name.data() + name.length());
     }
 
 private:
     static inline nonstd::string_view get_full_name(char const* hier_full_name, char* insert_point) {
+        assert(insert_point >= hier_full_name);
         if(insert_point == hier_full_name)
             return "unnamed";
         *insert_point = 0;
-        return nonstd::string_view(hier_full_name, insert_point - hier_full_name);
+        return {hier_full_name, static_cast<unsigned>(insert_point - hier_full_name)};
     }
 
     static void writeAttribute(uint64_t tx_id, ftr::event_type pos, value const& v, char const* hier_full_name, char* insert_point) {

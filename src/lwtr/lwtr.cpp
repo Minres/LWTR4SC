@@ -18,6 +18,7 @@
 
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 
 namespace lwtr {
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,8 +31,8 @@ struct tx_db::impl {
     std::unordered_map<tx_relation_handle, std::string> relation_by_handle_map;
     std::unordered_map<std::string, tx_relation_handle> relation_by_name_map;
 
-    impl(std::string const& s)
-    : file_name(s) {}
+    impl(std::string  s)
+    : file_name(std::move(s)) {}
 
     static tx_db* default_db;
     static std::vector<std::pair<uint64_t, tx_db_class_cb>> cb;
@@ -58,7 +59,7 @@ tx_db* tx_db::get_default_db() { return impl::default_db; }
 
 uint64_t tx_db::register_class_cb(tx_db_class_cb cb) {
     auto index = impl::cb.size() ? impl::cb.back().first + 1 : 0;
-    impl::cb.push_back(std::make_pair(index, cb));
+    impl::cb.emplace_back(index, cb);
     return index;
 }
 
@@ -112,7 +113,7 @@ tx_fiber::~tx_fiber() {
 
 uint64_t tx_fiber::register_class_cb(tx_fiber_class_cb cb) {
     auto index = impl::cb.size() ? impl::cb.back().first + 1 : 0;
-    impl::cb.push_back(std::make_pair(index, cb));
+    impl::cb.emplace_back(index, cb);
     return index;
 }
 
@@ -130,12 +131,12 @@ struct tx_generator_base::impl {
 };
 std::vector<std::pair<uint64_t, tx_generator_base::tx_generator_class_cb>> tx_generator_base::impl::cb;
 
-tx_generator_base::tx_generator_base(std::string const& name, tx_fiber& fiber, std::string const& begin_attribute_name,
-                                     std::string const& end_attribute_name)
+tx_generator_base::tx_generator_base(std::string  name, tx_fiber& fiber, std::string  begin_attribute_name,
+                                     std::string  end_attribute_name)
 : fiber(fiber)
-, generator_name(name)
-, begin_attr_name(begin_attribute_name)
-, end_attr_name(end_attribute_name)
+, generator_name(std::move(name))
+, begin_attr_name(std::move(begin_attribute_name))
+, end_attr_name(std::move(end_attribute_name))
 , id(++fid_counter) {
     for(auto& e : impl::cb)
         e.second(*this, CREATE);
@@ -148,7 +149,7 @@ tx_generator_base::~tx_generator_base() {
 
 uint64_t tx_generator_base::register_class_cb(tx_generator_class_cb cb) {
     auto index = impl::cb.size() ? impl::cb.back().first + 1 : 0;
-    impl::cb.push_back(std::make_pair(index, cb));
+    impl::cb.emplace_back(index, cb);
     return index;
 }
 
@@ -219,7 +220,7 @@ void tx_handle::deactivate(value const& v, sc_core::sc_time const& t) {
 
 uint64_t tx_handle::register_class_cb(tx_handle_class_cb cb) {
     auto index = impl::cb.size() ? impl::cb.back().first + 1 : 0;
-    impl::cb.push_back(std::make_pair(index, cb));
+    impl::cb.emplace_back(index, cb);
     return index;
 }
 
@@ -231,7 +232,7 @@ void tx_handle::unregister_class_cb(uint64_t id) {
 
 uint64_t tx_handle::register_record_attribute_cb(tx_handle_attribute_cb cb) {
     auto index = impl::acb.size() ? impl::acb.back().first + 1 : 0;
-    impl::acb.push_back(std::make_pair(index, cb));
+    impl::acb.emplace_back(index, cb);
     return index;
 }
 
@@ -243,7 +244,7 @@ void tx_handle::unregister_record_attribute_cb(uint64_t id) {
 
 uint64_t tx_handle::register_relation_cb(tx_handle_relation_cb cb) {
     auto index = impl::rcb.size() ? impl::rcb.back().first + 1 : 0;
-    impl::rcb.push_back(std::make_pair(index, cb));
+    impl::rcb.emplace_back(index, cb);
     return index;
 }
 

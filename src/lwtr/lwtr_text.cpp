@@ -111,7 +111,7 @@ template <typename WRITER> struct Writer {
     Writer(const std::string& name)
     : writer(new WRITER(name)) {}
 
-    Writer() {}
+    Writer() = default;
 
     inline bool open(const std::string& name) {
         writer.reset(new WRITER(name));
@@ -173,10 +173,10 @@ template <typename DB> void tx_fiber_cbf(const tx_fiber& s, callback_reason reas
 template <typename DB> struct value_visitor {
 
     static inline void writeAttribute(uint64_t tx_id, nonstd::string_view const& name, value const& v) {
-        char hier_full_name[1024] = {};
+        std::array<char, 1024> hier_full_name;
         if(name.length())
-            strncpy(hier_full_name, name.data(), name.length());
-        writeAttribute(tx_id, v, hier_full_name, hier_full_name + name.length());
+            strncpy(hier_full_name.data(), name.data(), name.length());
+        writeAttribute(tx_id, v, hier_full_name.data(), hier_full_name.data() + name.length());
     }
 
     static inline std::string get_full_name(char const* hier_full_name, char* insert_point) {

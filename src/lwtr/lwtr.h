@@ -276,8 +276,8 @@ class tx_generator_base {
     uint64_t const id;
 
 public:
-    tx_generator_base(std::string const& name, tx_fiber& s, std::string const& begin_attribute_name = "",
-                      std::string const& end_attribute_name = "");
+    tx_generator_base(std::string  name, tx_fiber& s, std::string  begin_attribute_name = "",
+                      std::string  end_attribute_name = "");
 
     virtual ~tx_generator_base();
 
