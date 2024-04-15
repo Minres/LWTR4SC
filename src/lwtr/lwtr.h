@@ -393,7 +393,7 @@ public:
     }
 
     tx_handle begin_tx(BEGIN const& begin_attr) {
-        auto v = lwtr::record(begin_attr);
+        auto v = ::lwtr::record(begin_attr);
         return tx_generator_base::begin_tx(v, sc_core::sc_time_stamp(), 0);
     }
 
@@ -438,7 +438,7 @@ public:
     void end_tx(tx_handle& t) { tx_generator_base::end_tx(t, value(), sc_core::sc_time_stamp()); }
 
     void end_tx(tx_handle& t, const END& end_attr) {
-        auto v = lwtr::record(end_attr);
+        auto v = ::lwtr::record(end_attr);
         tx_generator_base::end_tx(t, v, sc_core::sc_time_stamp());
     }
 

@@ -44,7 +44,7 @@ else()
     target_include_directories (lwtr PUBLIC ${SystemC_INCLUDE_DIRS})    
     target_link_libraries(lwtr PUBLIC ${SystemC_LIBRARIES} )
 endif()
-target_link_libraries (lwtr PRIVATE fmt::fmt)
+target_link_libraries(lwtr PRIVATE fmt::fmt)
 
 set_target_properties(lwtr PROPERTIES
     VERSION ${PROJECT_VERSION}
