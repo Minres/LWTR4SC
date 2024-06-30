@@ -44,7 +44,11 @@ else()
     target_include_directories (lwtr PUBLIC ${SystemC_INCLUDE_DIRS})    
     target_link_libraries(lwtr PUBLIC ${SystemC_LIBRARIES} )
 endif()
-target_link_libraries(lwtr PRIVATE fmt::fmt)
+if(TARGET fmt::fmt-header-only)
+	target_link_libraries(lwtr PUBLIC fmt::fmt-header-only)
+else()
+	target_link_libraries(lwtr PUBLIC fmt::fmt)
+endif()
 
 set_target_properties(lwtr PROPERTIES
     VERSION ${PROJECT_VERSION}
