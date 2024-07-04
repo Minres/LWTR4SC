@@ -47,7 +47,8 @@ endif()
 if(TARGET fmt::fmt-header-only)
 	target_link_libraries(lwtr PUBLIC fmt::fmt-header-only)
 else()
-	target_link_libraries(lwtr PUBLIC fmt::fmt)
+	target_compile_definitions(lwtr PRIVATE FMT_HEADER_ONLY)
+	target_link_libraries(lwtr PRIVATE fmt::fmt)
 endif()
 
 set_target_properties(lwtr PROPERTIES
