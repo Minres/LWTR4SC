@@ -44,11 +44,10 @@ else()
     target_include_directories (lwtr PUBLIC ${SystemC_INCLUDE_DIRS})    
     target_link_libraries(lwtr PUBLIC ${SystemC_LIBRARIES} )
 endif()
-if(TARGET fmt::fmt-header-only)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND TARGET fmt::fmt-header-only)
 	target_link_libraries(lwtr PUBLIC fmt::fmt-header-only)
 else()
-	target_compile_definitions(lwtr PRIVATE FMT_HEADER_ONLY)
-	target_link_libraries(lwtr PRIVATE fmt::fmt)
+    target_link_libraries(lwtr PRIVATE fmt::fmt)
 endif()
 
 set_target_properties(lwtr PROPERTIES
