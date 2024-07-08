@@ -153,13 +153,14 @@ VAL_CONV(sc_core::sc_time);
 template <typename T> value record(T const& t) { return value_converter<T>::to_value(t); }
 
 template <typename T> value record(T& t) { return value_converter<T>::to_value(t); }
-
+#ifndef __clang__
 template <> struct value_converter<sc_dt::uint64> {
     static value to_value(sc_dt::uint64 v) { return value(static_cast<uint64_t>(v)); }
 };
 template <> struct value_converter<sc_dt::int64> {
     static value to_value(sc_dt::int64 v) { return value(static_cast<int64_t>(v)); }
 };
+#endif
 template <int W> struct value_converter<sc_dt::sc_uint<W>> {
     static value to_value(sc_dt::sc_uint<W> v) { return value(static_cast<uint64_t>(v)); }
 };
