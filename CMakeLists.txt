@@ -2,7 +2,7 @@
 # 
 ###############################################################################
 cmake_minimum_required(VERSION 3.20)
-project(lwtr4sc)
+project(lwtr4sc VERSION 1.0.0)
 
 if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
 include(FetchContent)
