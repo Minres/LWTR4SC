@@ -122,8 +122,9 @@ template <typename WRITER> struct Writer {
 
     inline bool is_open() { return writer->is_open(); }
 
-    template <typename S, typename... Args> inline void write(S const& format, Args&&... args) {
-        writer->write(fmt::format(format, args...));
+    template <typename... Args>
+    inline void write(nonstd::string_view format, Args&&... args) {
+        writer->write(fmt::format(fmt::runtime(std::string(format)), std::forward<Args>(args)...));
     }
 
     inline std::string const& get_extension() { return WRITER::extension; }

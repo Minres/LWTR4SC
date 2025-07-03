@@ -2,7 +2,7 @@
 # 
 ###############################################################################
 cmake_minimum_required(VERSION 3.20)
-project(lwtr4sc)
+project(lwtr4sc VERSION 1.0.0)
 
 if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
 include(FetchContent)
@@ -26,3 +26,4 @@ endif()
 add_subdirectory(${scp_git_SOURCE_DIR}/report ${CMAKE_BINARY_DIR}/scp)
 add_subdirectory(src)
 add_subdirectory(example)
+add_subdirectory(${CMAKE_SOURCE_DIR}/test EXCLUDE_FROM_ALL)
