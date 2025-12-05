@@ -19,11 +19,13 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <nonstd/string_view.hpp>
-#include <nonstd/variant.hpp>
 #include <string>
 #include <systemc>
 #include <vector>
+// clang-format off
+#include <nonstd/string_view.hpp>
+#include <nonstd/variant.hpp>
+// clang-format on
 
 namespace lwtr {
 struct no_data {};
