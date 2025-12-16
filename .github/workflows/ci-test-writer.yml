@@ -26,7 +26,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y cmake g++ libfmt-dev
       - name: Configure
         run: >
-          cmake -S . -B build  -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }} || true
+          cmake -S . -B build  -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }} || true;
           cmake -S . -B build  -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
       - name: Build
         run: cmake --build build --target test_writer
