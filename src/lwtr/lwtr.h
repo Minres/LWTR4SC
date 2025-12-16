@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <systemc>
+#include <type_traits>
 #include <vector>
 // clang-format off
 #include <nonstd/string_view.hpp>
@@ -279,8 +280,7 @@ class tx_generator_base {
     uint64_t const id;
 
 public:
-    tx_generator_base(std::string  name, tx_fiber& s, std::string  begin_attribute_name = "",
-                      std::string  end_attribute_name = "");
+    tx_generator_base(std::string name, tx_fiber& s, std::string begin_attribute_name = "", std::string end_attribute_name = "");
 
     virtual ~tx_generator_base();
 
@@ -377,7 +377,13 @@ public:
 
 template <typename BEGIN = no_data, typename END = no_data> class tx_generator : public tx_generator_base {
 public:
-    tx_generator(const char* name, tx_fiber& s, std::string const& begin_attribute_name = "", std::string const& end_attribute_name = "")
+    tx_generator(const char* name, tx_fiber& s)
+    : tx_generator_base(name, s, "", "") {}
+
+    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name)
+    : tx_generator(name, s, attribute_name, std::is_same<BEGIN, no_data>{}) {}
+
+    tx_generator(const char* name, tx_fiber& s, std::string const& begin_attribute_name, std::string const& end_attribute_name)
     : tx_generator_base(name, s, begin_attribute_name, end_attribute_name) {}
 
     tx_generator() = default;
@@ -451,6 +457,13 @@ public:
         auto v = lwtr::record(end_attr);
         tx_generator_base::end_tx(t, v, end_sc_time);
     }
+
+private:
+    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::true_type)
+    : tx_generator_base(name, s, attribute_name, "") {}
+
+    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::false_type)
+    : tx_generator_base(name, s, "", attribute_name) {}
 };
 
 void tx_text_init();

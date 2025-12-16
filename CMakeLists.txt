@@ -5,21 +5,20 @@ cmake_minimum_required(VERSION 3.20)
 project(lwtr4sc VERSION 1.0.0)
 
 if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
-include(FetchContent)
-FetchContent_Declare(
-    scp_git
-    GIT_REPOSITORY  "https://github.com/accellera-official/systemc-common-practices.git"
-    GIT_TAG         "origin/main"
-    GIT_SHALLOW    ON
-    UPDATE_DISCONNECTED NOT ${UPDATE_SCC_SRC} # When enabled, this option causes the update step to be skipped.
-)
-FetchContent_Populate(scp_git)
-#FetchContent_MakeAvailable(scp_git)
-FetchContent_Declare(fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-  GIT_TAG master
-)
-FetchContent_MakeAvailable(fmt)
+  include(FetchContent)
+  FetchContent_Declare(fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG master
+  )
+  FetchContent_MakeAvailable(fmt)
+  FetchContent_Declare(
+      scp_git
+      GIT_REPOSITORY  "https://github.com/accellera-official/systemc-common-practices.git"
+      GIT_TAG         "origin/main"
+      GIT_SHALLOW    ON
+      UPDATE_DISCONNECTED NOT ${UPDATE_SCC_SRC} # When enabled, this option causes the update step to be skipped.
+  )
+  FetchContent_Populate(scp_git)
 endif()
 
 
