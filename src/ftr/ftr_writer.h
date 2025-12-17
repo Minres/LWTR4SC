@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <deque>
 #include <fstream>
 #include <limits>
 #include <lz4.h>
@@ -228,7 +229,7 @@ struct char_hash {
 };
 
 struct dictionary {
-    std::vector<std::string> out_dict{""};
+    std::deque<std::string> out_dict{""};
     std::unordered_map<char const*, size_t, char_hash, char_equal_to> lut;
     size_t flushed_idx{0}, unflushed_size{1};
 
@@ -534,8 +535,8 @@ template <bool COMPRESSED = false> struct ftr_writer {
     relations rel{dict};
     std::vector<std::unique_ptr<tx_block>> fiber_blocks;
     std::unordered_map<uint64_t, tx_entry*> txs;
+    std::deque<tx_entry> entry_storage;
     std::vector<tx_entry*> free_pool;
-    std::vector<void*> free_pool_blocks;
 
     ftr_writer(const std::string& name)
     : cw(name) {}
@@ -553,8 +554,6 @@ template <bool COMPRESSED = false> struct ftr_writer {
             if(block)
                 block->flush(cw);
         rel.flush(cw);
-        for(auto e : free_pool_blocks)
-            free(e);
     }
 
     inline void writeInfo(int8_t timescale) {
@@ -574,13 +573,9 @@ template <bool COMPRESSED = false> struct ftr_writer {
     inline void startTransaction(uint64_t id, uint64_t generator, uint64_t stream, uint64_t time) {
         if(dir.size())
             dir.flush(cw);
-        if(!free_pool.size()) {
-            const auto block_size = sizeof(tx_entry) * 64;
-            auto p = malloc(sizeof(uint8_t) * block_size);
-            auto up = static_cast<uint8_t*>(p);
-            for(auto pp = up; pp < (up + block_size); pp += sizeof(tx_entry))
-                free_pool.push_back(new(pp) tx_entry());
-            free_pool_blocks.push_back(p);
+        if(free_pool.empty()) {
+            entry_storage.emplace_back();
+            free_pool.push_back(&entry_storage.back());
         }
         auto* e = free_pool.back();
         free_pool.pop_back();
