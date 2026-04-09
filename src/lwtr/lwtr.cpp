@@ -132,7 +132,7 @@ struct tx_generator_base::impl {
 std::vector<std::pair<uint64_t, tx_generator_base::tx_generator_class_cb>> tx_generator_base::impl::cb;
 
 tx_generator_base::tx_generator_base(std::string  name, tx_fiber& fiber, std::string  begin_attribute_name,
-                                     std::string  end_attribute_name)
+                                     std::string  end_attribute_name, bool with_events)
 : fiber(fiber)
 , generator_name(std::move(name))
 , begin_attr_name(std::move(begin_attribute_name))
@@ -140,6 +140,11 @@ tx_generator_base::tx_generator_base(std::string  name, tx_fiber& fiber, std::st
 , id(++fid_counter) {
     for(auto& e : impl::cb)
         e.second(*this, CREATE);
+    if(with_events) {
+        auto gen = new tx_generator_base(generator_name+"_events", fiber);
+        evt_gen.reset(gen);
+        evt_rel = get_tx_fiber().get_tx_db()->create_relation("parent_of");
+    }
 }
 
 tx_generator_base::~tx_generator_base() {
@@ -212,7 +217,7 @@ void tx_handle::deactivate(value const& v, sc_core::sc_time const& t) {
         ss << "transaction end time (" << t << ") needs to be larger than current time (" << sc_core::sc_time_stamp() << ")";
         SC_REPORT_ERROR("tx_handle::deactivate", ss.str().c_str());
     }
-    pimpl->end_time = t;
+    pimpl->end_time = pimpl->begin_time<=t?t:pimpl->begin_time;
     for(auto& e : impl::cb)
         e.second(*this, END, v);
     pimpl->active = false;

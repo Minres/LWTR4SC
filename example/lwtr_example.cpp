@@ -16,8 +16,12 @@
 
 #include <chrono>
 #include <list>
+#if defined(HAS_SCC)
+#include <scc/report.h>
+#define SCP_INFO(X) SCCINFO(X)
+#else
 #include <scp/report.h>
-
+#endif
 #include "lwtr/lwtr.h"
 
 using namespace sc_core;
@@ -291,9 +295,11 @@ inline void design::data_phase() {
 
 int sc_main(int argc, char* argv[]) {
     auto start = std::chrono::system_clock::now();
-
+#if defined(HAS_SCC)
+    scc::init_logging(scc::log::DEBUG);
+#else
     scp::init_logging(scp::log::DEBUG);
-
+#endif
     lwtr::tx_text_init();
     lwtr::tx_db db("my_db.txlog");
     lwtr::tx_db::set_default_db(&db);

@@ -1,6 +1,19 @@
 cmake_minimum_required(VERSION 3.20)
 
 add_executable(lwtr_example lwtr_example.cpp)
+if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
 target_link_libraries (lwtr_example lwtr reporting)
-
+else()
+target_compile_definitions(lwtr_example PUBLIC HAS_SCC)
+target_link_libraries (lwtr_example lwtr scc::scc-sysc)
+endif()
 add_test(NAME lwtr_example_test COMMAND lwtr_example)
+
+add_executable(lwtr_event_example lwtr_event_example.cpp)
+if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
+target_link_libraries (lwtr_event_example lwtr reporting)
+else()
+target_compile_definitions(lwtr_event_example PUBLIC HAS_SCC)
+target_link_libraries (lwtr_event_example lwtr scc::scc-sysc)
+endif()
+add_test(NAME lwtr_event_example_test COMMAND lwtr_event_example)
