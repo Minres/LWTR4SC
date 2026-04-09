@@ -141,7 +141,7 @@ tx_generator_base::tx_generator_base(std::string  name, tx_fiber& fiber, std::st
     for(auto& e : impl::cb)
         e.second(*this, CREATE);
     if(with_events) {
-        auto gen = new tx_generator_base(generator_name+"[events]", fiber);
+        auto gen = new tx_generator_base(generator_name+".events", fiber);
         evt_gen.reset(gen);
         evt_rel = get_tx_fiber().get_tx_db()->create_relation("parent_of");
     }
