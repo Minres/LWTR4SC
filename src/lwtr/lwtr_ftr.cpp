@@ -172,10 +172,14 @@ template <typename DB> void tx_handle_cbf(const tx_handle& t, callback_reason re
         Writer<DB>::writer().startTransaction(t.get_id(), t.get_tx_generator_base().get_id(),
                                               t.get_tx_generator_base().get_tx_fiber().get_id(),
                                               t.get_begin_sc_time() / sc_core::sc_time(1, sc_core::SC_PS));
-        Writer<DB>::writeAttribute(t.get_id(), ftr::event_type::BEGIN, t.get_tx_generator_base().get_begin_attribute_name(), v);
+        auto  const& name = t.get_tx_generator_base().get_begin_attribute_name();
+        if(name.length())
+            Writer<DB>::writeAttribute(t.get_id(), ftr::event_type::BEGIN, name, v);
     } break;
     case END: {
-        Writer<DB>::writeAttribute(t.get_id(), ftr::event_type::END, t.get_tx_generator_base().get_end_attribute_name(), v);
+        auto  const& name = t.get_tx_generator_base().get_end_attribute_name();
+        if(name.length())
+            Writer<DB>::writeAttribute(t.get_id(), ftr::event_type::END, name, v);
         Writer<DB>::writer().endTransaction(t.get_id(), t.get_end_sc_time() / sc_core::sc_time(1, sc_core::SC_PS));
     } break;
     default:;

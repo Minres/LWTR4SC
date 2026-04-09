@@ -459,10 +459,10 @@ public:
     }
 
 private:
-    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::true_type)
+    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::false_type)
     : tx_generator_base(name, s, attribute_name, "") {}
 
-    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::false_type)
+    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::true_type)
     : tx_generator_base(name, s, "", attribute_name) {}
 };
 
