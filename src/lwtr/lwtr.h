@@ -370,7 +370,17 @@ public:
     };
 
     template <typename... NameValues>
-    void record_event(const char* name, sc_core::sc_time timestamp, NameValues&&... nvs) {
+    void record_event(const char* name, NameValues&&... nvs) {
+        auto& evt_gen = get_tx_generator_base().get_evt_gen();
+        if(evt_gen) {
+            auto evt_hndl = evt_gen->begin_tx(value(), sc_core::sc_time_stamp(), get_tx_generator_base().get_evt_rel(), this);
+            record_event_attrs(evt_hndl, std::forward<NameValues>(nvs)...);
+            evt_hndl.end_tx();
+        }
+    }
+
+    template <typename... NameValues>
+    void record_event_at_time(const char* name, sc_core::sc_time timestamp, NameValues&&... nvs) {
         auto& evt_gen = get_tx_generator_base().get_evt_gen();
         if(evt_gen) {
             auto evt_hndl = evt_gen->begin_tx(value(), timestamp, get_tx_generator_base().get_evt_rel(), this);
@@ -387,7 +397,7 @@ public:
 
     tx_generator_base const& get_tx_generator_base() const;
 private:
-    // Base case for variadic template
+    // Base cases for variadic template
     void record_event_attrs(tx_handle&) {}
 
     // Recursive case: process pairs of (name, value)

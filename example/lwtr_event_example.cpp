@@ -121,7 +121,7 @@ void test::main() {
             auto stage_time = issue_time;
             for (int s = 0; s < 5; ++s) {
                 PipelineStage stage = static_cast<PipelineStage>(s);
-                insn_tx.record_event(stage_name(stage),stage_time,
+                insn_tx.record_event_at_time(stage_name(stage),stage_time,
                                      "stage_id", static_cast<uint64_t>(s),
                                      "pc", insn.addr);
                 stage_time += STAGE_LATENCY * CYCLE_TIME;
@@ -141,7 +141,7 @@ void test::main() {
                 auto mem_stage_time = mem_start;
                 for (int s = 0; s < 5; ++s) {
                     MemoryStage stage = static_cast<MemoryStage>(s);
-                    mem_tx.record_event(mem_stage_name(stage), mem_stage_time,
+                    mem_tx.record_event_at_time(mem_stage_name(stage), mem_stage_time,
                                         "fabric_node", static_cast<uint64_t>(s),
                                         "addr", insn.mem_addr);
                     mem_stage_time += 2 * CYCLE_TIME;  // Memory fabric has 2-cycle latency per stage
