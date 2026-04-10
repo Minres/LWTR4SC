@@ -31,7 +31,7 @@ struct tx_db::impl {
     std::unordered_map<tx_relation_handle, std::string> relation_by_handle_map;
     std::unordered_map<std::string, tx_relation_handle> relation_by_name_map;
 
-    impl(std::string  s)
+    impl(std::string s)
     : file_name(std::move(s)) {}
 
     static tx_db* default_db;
@@ -131,8 +131,7 @@ struct tx_generator_base::impl {
 };
 std::vector<std::pair<uint64_t, tx_generator_base::tx_generator_class_cb>> tx_generator_base::impl::cb;
 
-tx_generator_base::tx_generator_base(std::string  name, tx_fiber& fiber, std::string  begin_attribute_name,
-                                     std::string  end_attribute_name)
+tx_generator_base::tx_generator_base(std::string name, tx_fiber& fiber, std::string begin_attribute_name, std::string end_attribute_name)
 : fiber(fiber)
 , generator_name(std::move(name))
 , begin_attr_name(std::move(begin_attribute_name))
