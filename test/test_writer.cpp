@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.  
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +17,8 @@
 
 #include "lwtr/lwtr_text.cpp"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 int main() {
@@ -26,7 +26,7 @@ int main() {
     const std::string test_file = "test_writer_output.lwtrt";
     // Create a Writer<PlainWriter> and open the file
     lwtr::Writer<lwtr::PlainWriter> writer;
-    if (!writer.open(test_file)) {
+    if(!writer.open(test_file)) {
         std::cerr << "Failed to open test file for writing\n";
         return 1;
     }
@@ -38,7 +38,7 @@ int main() {
     std::ifstream in(test_file);
     std::string line;
     std::getline(in, line);
-    if (line == "Hello world! The answer is 42.") {
+    if(line == "Hello world! The answer is 42.") {
         std::cout << "Test passed!\n";
         return 0;
     } else {

@@ -31,7 +31,7 @@ struct tx_db::impl {
     std::unordered_map<tx_relation_handle, std::string> relation_by_handle_map;
     std::unordered_map<std::string, tx_relation_handle> relation_by_name_map;
 
-    impl(std::string  s)
+    impl(std::string s)
     : file_name(std::move(s)) {}
 
     static tx_db* default_db;
