@@ -1,7 +1,6 @@
 @PACKAGE_INIT@
 include(CMakeFindDependencyMacro)
 
-find_dependency(SystemCLanguage)
 find_dependency(lz4)
 find_dependency(fmt)
 find_dependency(ZLIB)
