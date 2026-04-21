@@ -1,6 +1,7 @@
 @PACKAGE_INIT@
 include(CMakeFindDependencyMacro)
 
+find_dependency(SystemCLanguage)
 find_dependency(lz4)
 find_dependency(fmt)
 find_dependency(ZLIB)
@@ -11,4 +12,4 @@ if(NOT TARGET lwtr::lwtr)
 endif()
 
 set(lwtr_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
-set(lwtr_lIBRARIES lwtr::lwtr)
+set(lwtr_LIBRARIES lwtr::lwtr)
