@@ -6,9 +6,13 @@ project(lwtr4sc VERSION 1.0.0)
 
 if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
   include(FetchContent)
+  # Make fmt's targets exportable so install(EXPORT) of lwtr/reporting succeeds,
+  # and prefer a system-installed fmt (imported, already exportable) when present.
+  set(FMT_INSTALL ON CACHE BOOL "" FORCE)
   FetchContent_Declare(fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
     GIT_TAG 9.1.0
+    FIND_PACKAGE_ARGS
   )
   FetchContent_MakeAvailable(fmt)
   FetchContent_Declare(
