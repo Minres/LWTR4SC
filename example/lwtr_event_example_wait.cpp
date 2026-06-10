@@ -76,12 +76,12 @@ void test::main() {
     // Generator IDs: 0 = cpu_tx, 1 = cpu_events, 2 = mem_tx, 3 = mem_events
     lwtr::tx_fiber cpu_fiber((std::string(name()) + ".CPU_Core").c_str(), "transactions");
     lwtr::tx_fiber mem_fiber((std::string(name()) + ".Memory").c_str(), "transactions");
-    lwtr::tx_generator<char const*, char const*> instruction_gen("instruction", cpu_fiber, "mnemonic", "result");
-    lwtr::tx_generator<char const*> bus_transaction_gen("bus_transaction", mem_fiber, "op");
+    lwtr::tx_generator<char const*, char const*> instruction_gen("instruction", cpu_fiber, "mnemonic", "result", true);
+    lwtr::tx_generator<char const*> bus_transaction_gen("bus_transaction", mem_fiber, "op", true);
 
     uint64_t tx_id = 1;
     uint64_t cycle = 0;
-    const sc_core::sc_time CYCLE_TIME = 10_ns; // 10 ns per cycle
+    const sc_core::sc_time CYCLE_TIME = sc_core::sc_time(10, sc_core::SC_NS); // 10 ns per cycle
     const uint64_t STAGE_LATENCY = 1;          // 1 cycle per pipeline stage
 
     // Simulate dual-issue CPU executing instructions
@@ -110,6 +110,7 @@ void test::main() {
     // Process instructions in pairs (dual issue)
     for(size_t i = 0; i < program.size(); i += 2) {
         wait(5 * CYCLE_TIME);
+        auto issue_time = sc_core::sc_time_stamp();
 
         // Issue up to 2 instructions simultaneously
         for (size_t j = 0; j < 2; ++j) {
@@ -126,7 +127,7 @@ void test::main() {
             auto stage_time = issue_time;
             for(int s = 0; s < 5; ++s) {
                 PipelineStage stage = static_cast<PipelineStage>(s);
-                insn_tx.record_event(stage_name(stage), stage_time, "stage_id", static_cast<uint64_t>(s), "pc", insn.addr);
+                insn_tx.record_event_at_time(stage_name(stage), stage_time, "stage_id", static_cast<uint64_t>(s), "pc", insn.addr);
                 stage_time += STAGE_LATENCY * CYCLE_TIME;
             }
 
@@ -144,13 +145,13 @@ void test::main() {
                 auto mem_stage_time = mem_start;
                 for(int s = 0; s < 5; ++s) {
                     MemoryStage stage = static_cast<MemoryStage>(s);
-                    mem_tx.record_event(mem_stage_name(stage), mem_stage_time, "fabric_node", static_cast<uint64_t>(s), "addr",
-                                        insn.mem_addr);
+                    mem_tx.record_event_at_time(mem_stage_name(stage), mem_stage_time, "fabric_node", static_cast<uint64_t>(s), "addr",
+                                                insn.mem_addr);
                     mem_stage_time += 2 * CYCLE_TIME; // Memory fabric has 2-cycle latency per stage
                 }
 
                 // Memory transaction ends after all fabric stages
-                mem_tx.end_tx(mem_stage_time);
+                mem_tx.end_tx_delayed(mem_stage_time);
 
                 // Instruction takes longer due to memory access
                 insn_tx.end_tx_delayed<char const*>(mem_stage_time, "ok");
