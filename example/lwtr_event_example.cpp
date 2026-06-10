@@ -76,7 +76,7 @@ void test::main() {
 
     uint64_t tx_id = 1;
     uint64_t cycle = 0;
-    const sc_core::sc_time CYCLE_TIME = 10_ns;  // 10 ns per cycle
+    const sc_core::sc_time CYCLE_TIME = sc_core::sc_time(10, sc_core::SC_NS);  // 10 ns per cycle
     const uint64_t STAGE_LATENCY = 1;  // 1 cycle per pipeline stage
 
     // Simulate dual-issue CPU executing instructions
