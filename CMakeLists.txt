@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.20)
 project(lwtr4sc VERSION 1.0.0)
 
 if(CMAKE_PROJECT_NAME STREQUAL "lwtr4sc")
+  enable_testing()
   include(FetchContent)
   # Make fmt's targets exportable so install(EXPORT) of lwtr/reporting succeeds,
   # and prefer a system-installed fmt (imported, already exportable) when present.
