@@ -1,0 +1,34 @@
+name: CI Examples
+
+on:
+  push:
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**CMakeLists.txt'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**CMakeLists.txt'
+      - '.github/workflows/**'
+
+jobs:
+  build-and-run-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cpp_std: [17, 20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ libfmt-dev
+      - name: Configure
+        run: >
+          cmake -S . -B build  -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }} || true;
+          cmake -S . -B build  -DCMAKE_CXX_STANDARD=${{ matrix.cpp_std }}
+      - name: Build examples
+        run: cmake --build build -j$(nproc) --target lwtr_example lwtr_event_example lwtr_event_example_wait
+      - name: Run examples
+        run: ctest --test-dir build/example --output-on-failure
