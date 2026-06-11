@@ -203,7 +203,7 @@ template <typename DB> void tx_handle_relation_cbf(const tx_handle& tr_1, const 
     if(f_1.get_tx_db()->get_recording() == false)
         return;
     if(Writer<DB>::get().is_open()) {
-        auto const& f_2 = tr_1.get_tx_fiber();
+        auto const& f_2 = tr_2.get_tx_fiber();
         Writer<DB>::writer().writeRelation(f_1.get_tx_db()->get_relation_name(relation_handle), f_1.get_id(), tr_1.get_id(), f_2.get_id(),
                                            tr_2.get_id());
     }
