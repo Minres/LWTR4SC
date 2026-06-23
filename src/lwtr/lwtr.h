@@ -156,7 +156,7 @@ VAL_CONV(sc_core::sc_time);
 template <typename T> value record(T const& t) { return value_converter<T>::to_value(t); }
 
 template <typename T> value record(T& t) { return value_converter<T>::to_value(t); }
-#if !defined(__clang__) && !defined(__APPLE__)
+#if !defined(__clang__) && !defined(__APPLE__) && __WORDSIZE == 64
 template <> struct value_converter<sc_dt::uint64> {
     static value to_value(sc_dt::uint64 v) { return value(static_cast<uint64_t>(v)); }
 };
@@ -280,8 +280,10 @@ class tx_generator_base {
     uint64_t const id;
     std::unique_ptr<tx_generator_base> evt_gen;
     tx_relation_handle evt_rel;
+
 public:
-    tx_generator_base(std::string name, tx_fiber& s, std::string begin_attribute_name = "", std::string end_attribute_name = "", bool with_events=false);
+    tx_generator_base(std::string name, tx_fiber& s, std::string begin_attribute_name = "", std::string end_attribute_name = "",
+                      bool with_events = false);
 
     virtual ~tx_generator_base();
 
@@ -304,8 +306,8 @@ protected:
     friend class tx_handle;
     tx_handle begin_tx(value const&, sc_core::sc_time const&, tx_relation_handle, tx_handle const* = nullptr) const;
     void end_tx(tx_handle&, value const&, sc_core::sc_time const&) const;
-    std::unique_ptr<tx_generator_base> const& get_evt_gen() const {return evt_gen;}
-    tx_relation_handle get_evt_rel() const {return evt_rel;}
+    std::unique_ptr<tx_generator_base> const& get_evt_gen() const { return evt_gen; }
+    tx_relation_handle get_evt_rel() const { return evt_rel; }
 };
 
 class tx_handle {
@@ -334,7 +336,9 @@ public:
 
     void end_tx_delayed(sc_core::sc_time const& end_time) { end_tx(value(), end_time); }
 
-    template <typename END> void end_tx_delayed(sc_core::sc_time const& end_time, const END& attr) { end_tx(::lwtr::record(attr), end_time); }
+    template <typename END> void end_tx_delayed(sc_core::sc_time const& end_time, const END& attr) {
+        end_tx(::lwtr::record(attr), end_time);
+    }
 
     void record_attribute(char const* name, value const& attr);
 
@@ -369,18 +373,17 @@ public:
         return add_relation(get_tx_fiber().get_tx_db()->create_relation(relation_name), other_tx_h);
     };
 
-    template <typename... NameValues>
-    void record_event(const char* name, NameValues&&... nvs) {
+    template <typename... NameValues> void record_event(const char* name, NameValues&&... nvs) {
         auto& evt_gen = get_tx_generator_base().get_evt_gen();
         if(evt_gen) {
-            auto evt_hndl = evt_gen->begin_tx(name ? value(name) : value(), sc_core::sc_time_stamp(), get_tx_generator_base().get_evt_rel(), this);
+            auto evt_hndl =
+                evt_gen->begin_tx(name ? value(name) : value(), sc_core::sc_time_stamp(), get_tx_generator_base().get_evt_rel(), this);
             record_event_attrs(evt_hndl, std::forward<NameValues>(nvs)...);
             evt_hndl.end_tx();
         }
     }
 
-    template <typename... NameValues>
-    void record_event_at_time(const char* name, sc_core::sc_time timestamp, NameValues&&... nvs) {
+    template <typename... NameValues> void record_event_at_time(const char* name, sc_core::sc_time timestamp, NameValues&&... nvs) {
         auto& evt_gen = get_tx_generator_base().get_evt_gen();
         if(evt_gen) {
             auto evt_hndl = evt_gen->begin_tx(name ? value(name) : value(), timestamp, get_tx_generator_base().get_evt_rel(), this);
@@ -396,17 +399,16 @@ public:
     tx_fiber const& get_tx_fiber() const;
 
     tx_generator_base const& get_tx_generator_base() const;
+
 private:
     // Base cases for variadic template
     void record_event_attrs(tx_handle&) {}
 
     // Recursive case: process pairs of (name, value)
-    template <typename T, typename... Rest>
-    void record_event_attrs(tx_handle& hndl, const char* attr_name, T value, Rest&&... rest) {
+    template <typename T, typename... Rest> void record_event_attrs(tx_handle& hndl, const char* attr_name, T value, Rest&&... rest) {
         hndl.record_attribute(attr_name, value);
         record_event_attrs(hndl, std::forward<Rest>(rest)...);
     }
-
 };
 
 template <typename BEGIN = no_data, typename END = no_data> class tx_generator : public tx_generator_base {
@@ -417,7 +419,8 @@ public:
     tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, bool with_events = false)
     : tx_generator(name, s, attribute_name, std::is_same<BEGIN, no_data>{}, with_events) {}
 
-    tx_generator(const char* name, tx_fiber& s, std::string const& begin_attribute_name, std::string const& end_attribute_name, bool with_events = false)
+    tx_generator(const char* name, tx_fiber& s, std::string const& begin_attribute_name, std::string const& end_attribute_name,
+                 bool with_events = false)
     : tx_generator_base(name, s, begin_attribute_name, end_attribute_name, with_events) {}
 
     tx_generator() = default;
