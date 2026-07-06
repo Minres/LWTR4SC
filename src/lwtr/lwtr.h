@@ -139,20 +139,17 @@ VAL_CONV(char const*);
 VAL_CONV(std::string);
 VAL_CONV(double);
 VAL_CONV(bool);
-#if !defined(_MSC_VER)
-VAL_CONV(int64_t);
-#endif
-VAL_CONV2(int32_t, int64_t);
-VAL_CONV2(int16_t, int64_t);
-VAL_CONV2(int8_t, int64_t);
-#if !defined(_MSC_VER)
-VAL_CONV(uint64_t);
-#endif
-VAL_CONV2(uint32_t, uint64_t);
-VAL_CONV2(uint16_t, uint64_t);
-VAL_CONV2(uint8_t, uint64_t);
+VAL_CONV2(signed long long, int64_t);
+VAL_CONV2(signed long, int64_t);
+VAL_CONV2(signed int, int64_t);
+VAL_CONV2(signed short, int64_t);
+VAL_CONV2(signed char, int64_t);
+VAL_CONV2(unsigned long long, uint64_t);
+VAL_CONV2(unsigned long, uint64_t);
+VAL_CONV2(unsigned int, uint64_t);
+VAL_CONV2(unsigned short, uint64_t);
+VAL_CONV2(unsigned char, uint64_t);
 VAL_CONV(sc_core::sc_time);
-
 template <typename T> value record(T const& t) { return value_converter<T>::to_value(t); }
 
 template <typename T> value record(T& t) { return value_converter<T>::to_value(t); }
