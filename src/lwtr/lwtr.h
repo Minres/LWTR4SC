@@ -223,7 +223,7 @@ public:
 
     bool get_recording() const { return enable; }
 
-    tx_relation_handle create_relation(const char* relation_name) const;
+    tx_relation_handle create_relation(char const* relation_name) const;
 
     tx_relation_handle create_relation(std::string const& relation_name) const { return create_relation(relation_name.c_str()); }
 
@@ -242,7 +242,7 @@ public:
     tx_fiber(std::string const& fiber_name, std::string const& fiber_kind, tx_db* tx_db_p = tx_db::get_default_db())
     : tx_fiber(fiber_name.c_str(), fiber_kind.c_str(), tx_db_p) {}
 
-    tx_fiber(const char* fiber_name, const char* fiber_kind, tx_db* tx_db_p = tx_db::get_default_db());
+    tx_fiber(char const* fiber_name, char const* fiber_kind, tx_db* tx_db_p = tx_db::get_default_db());
 
     virtual ~tx_fiber();
 
@@ -334,7 +334,7 @@ public:
 
     template <typename T> void record_attribute(std::string const& name, const T& attr) { record_attribute(name.c_str(), record(attr)); }
 
-    template <typename T> void record_attribute(const char* name, const T& attr) { record_attribute(name, record(attr)); }
+    template <typename T> void record_attribute(char const* name, const T& attr) { record_attribute(name, record(attr)); }
 
     template <typename T> void record_attribute(const T& attr) { record_attribute(nullptr, record(attr)); }
 
@@ -355,7 +355,7 @@ public:
 
     bool add_relation(tx_relation_handle, const tx_handle&);
 
-    bool add_relation(const char* relation_name, const tx_handle& other_tx_h) {
+    bool add_relation(char const* relation_name, const tx_handle& other_tx_h) {
         return add_relation(get_tx_fiber().get_tx_db()->create_relation(relation_name), other_tx_h);
     };
 
@@ -363,7 +363,7 @@ public:
         return add_relation(get_tx_fiber().get_tx_db()->create_relation(relation_name), other_tx_h);
     };
 
-    template <typename... NameValues> void record_event(const char* name, NameValues&&... nvs) {
+    template <typename... NameValues> void record_event(char const* name, NameValues&&... nvs) {
         auto& evt_gen = get_tx_generator_base().get_evt_gen();
         if(evt_gen) {
             auto evt_hndl =
@@ -373,7 +373,7 @@ public:
         }
     }
 
-    template <typename... NameValues> void record_event_at_time(const char* name, sc_core::sc_time timestamp, NameValues&&... nvs) {
+    template <typename... NameValues> void record_event_at_time(char const* name, sc_core::sc_time timestamp, NameValues&&... nvs) {
         auto& evt_gen = get_tx_generator_base().get_evt_gen();
         if(evt_gen) {
             auto evt_hndl = evt_gen->begin_tx(name ? value(name) : value(), timestamp, get_tx_generator_base().get_evt_rel(), this);
@@ -395,7 +395,7 @@ private:
     void record_event_attrs(tx_handle&) {}
 
     // Recursive case: process pairs of (name, value)
-    template <typename T, typename... Rest> void record_event_attrs(tx_handle& hndl, const char* attr_name, T value, Rest&&... rest) {
+    template <typename T, typename... Rest> void record_event_attrs(tx_handle& hndl, char const* attr_name, T value, Rest&&... rest) {
         hndl.record_attribute(attr_name, value);
         record_event_attrs(hndl, std::forward<Rest>(rest)...);
     }
@@ -403,13 +403,19 @@ private:
 
 template <typename BEGIN = no_data, typename END = no_data> class tx_generator : public tx_generator_base {
 public:
-    tx_generator(const char* name, tx_fiber& s, bool with_events = false)
+    tx_generator(char const* name, tx_fiber& s, bool with_events = false)
     : tx_generator_base(name, s, "", "", with_events) {}
 
-    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, bool with_events = false)
+    tx_generator(char const* name, tx_fiber& s, char const* attribute_name, bool with_events = false)
     : tx_generator(name, s, attribute_name, std::is_same<BEGIN, no_data>{}, with_events) {}
 
-    tx_generator(const char* name, tx_fiber& s, std::string const& begin_attribute_name, std::string const& end_attribute_name,
+    tx_generator(char const* name, tx_fiber& s, std::string const& attribute_name, bool with_events = false)
+    : tx_generator(name, s, attribute_name, std::is_same<BEGIN, no_data>{}, with_events) {}
+
+    tx_generator(char const* name, tx_fiber& s, char const* begin_attribute_name, char const* end_attribute_name, bool with_events = false)
+    : tx_generator_base(name, s, begin_attribute_name, end_attribute_name, with_events) {}
+
+    tx_generator(char const* name, tx_fiber& s, std::string const& begin_attribute_name, std::string const& end_attribute_name,
                  bool with_events = false)
     : tx_generator_base(name, s, begin_attribute_name, end_attribute_name, with_events) {}
 
@@ -423,7 +429,7 @@ public:
         return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), relation_h, &other_tx_h);
     }
 
-    tx_handle begin_tx(const char* relation_name, tx_handle const& other_tx_h) {
+    tx_handle begin_tx(char const* relation_name, tx_handle const& other_tx_h) {
         return tx_generator_base::begin_tx(value(), sc_core::sc_time_stamp(), get_tx_fiber().get_tx_db()->create_relation(relation_name),
                                            &other_tx_h);
     }
@@ -438,7 +444,7 @@ public:
         return tx_generator_base::begin_tx(v, sc_core::sc_time_stamp(), relation_h, &other_tx_h);
     }
 
-    tx_handle begin_tx(const BEGIN& begin_attr, const char* relation_name, const tx_handle& other_tx_h) {
+    tx_handle begin_tx(const BEGIN& begin_attr, char const* relation_name, const tx_handle& other_tx_h) {
         auto v = lwtr::record(begin_attr);
         return tx_generator_base::begin_tx(v, sc_core::sc_time_stamp(), get_tx_fiber().get_tx_db()->create_relation(relation_name),
                                            &other_tx_h);
@@ -450,7 +456,7 @@ public:
         return tx_generator_base::begin_tx(value(), begin_sc_time, relation_h, &other_tx_h);
     }
 
-    tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const char* relation_name, const tx_handle& other_tx_h) {
+    tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, char const* relation_name, const tx_handle& other_tx_h) {
         return tx_generator_base::begin_tx(value(), begin_sc_time, get_tx_fiber().get_tx_db()->create_relation(relation_name), &other_tx_h);
     }
 
@@ -465,7 +471,7 @@ public:
         return tx_generator_base::begin_tx(v, begin_sc_time, relation_h, &other_tx_h);
     }
 
-    tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const BEGIN& begin_attr, const char* relation_name,
+    tx_handle begin_tx_delayed(sc_core::sc_time const& begin_sc_time, const BEGIN& begin_attr, char const* relation_name,
                                const tx_handle& other_tx_h) {
         auto v = lwtr::record(begin_attr);
         return tx_generator_base::begin_tx(v, begin_sc_time, get_tx_fiber().get_tx_db()->create_relation(relation_name), &other_tx_h);
@@ -486,10 +492,10 @@ public:
     }
 
 private:
-    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::false_type, bool b)
+    tx_generator(char const* name, tx_fiber& s, std::string const& attribute_name, std::false_type, bool b)
     : tx_generator_base(name, s, attribute_name, "", b) {}
 
-    tx_generator(const char* name, tx_fiber& s, std::string const& attribute_name, std::true_type, bool b)
+    tx_generator(char const* name, tx_fiber& s, std::string const& attribute_name, std::true_type, bool b)
     : tx_generator_base(name, s, "", attribute_name, b) {}
 };
 
