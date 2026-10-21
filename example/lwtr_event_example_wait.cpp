@@ -52,11 +52,16 @@ enum class MemoryStage { REQUEST, ARBITRATE, ROUTE, ACCESS, RESPONSE };
 
 const char* mem_stage_name(MemoryStage stage) {
     switch(stage) {
-        case MemoryStage::REQUEST:   return "REQ";
-        case MemoryStage::ARBITRATE: return "ARB";
-        case MemoryStage::ROUTE:     return "ROUTE";
-        case MemoryStage::ACCESS:    return "ACCESS";
-        case MemoryStage::RESPONSE:  return "RESP";
+    case MemoryStage::REQUEST:
+        return "REQ";
+    case MemoryStage::ARBITRATE:
+        return "ARB";
+    case MemoryStage::ROUTE:
+        return "ROUTE";
+    case MemoryStage::ACCESS:
+        return "ACCESS";
+    case MemoryStage::RESPONSE:
+        return "RESP";
     }
     return "UNKNOWN";
 }
@@ -64,11 +69,9 @@ const char* mem_stage_name(MemoryStage stage) {
 class test : public sc_module {
 public:
 #if IEEE_1666_SYSTEMC < 202301L
-   SC_HAS_PROCESS(test);
-#endfi
-   test(::sc_core::sc_module_name) {
-        SC_THREAD(main);
-    }
+    SC_HAS_PROCESS(test);
+#endif
+    test(::sc_core::sc_module_name) { SC_THREAD(main); }
     void main();
 };
 
@@ -84,7 +87,7 @@ void test::main() {
     uint64_t tx_id = 1;
     uint64_t cycle = 0;
     const sc_core::sc_time CYCLE_TIME = sc_core::sc_time(10, sc_core::SC_NS); // 10 ns per cycle
-    const uint64_t STAGE_LATENCY = 1;          // 1 cycle per pipeline stage
+    const uint64_t STAGE_LATENCY = 1;                                         // 1 cycle per pipeline stage
 
     // Simulate dual-issue CPU executing instructions
     struct InstructionInfo {
@@ -97,16 +100,11 @@ void test::main() {
     };
 
     std::vector<InstructionInfo> program = {
-        {"ADD",   "R-type", 0x1000, false, 0, nullptr},
-        {"SUB",   "R-type", 0x1004, false, 0, nullptr},
-        {"LW",    "I-type", 0x1008, true,  0x2000, "load"},
-        {"ADDI",  "I-type", 0x100C, false, 0, nullptr},
-        {"SW",    "S-type", 0x1010, true,  0x2004, "store"},
-        {"BEQ",   "B-type", 0x1014, false, 0, nullptr},
-        {"LW",    "I-type", 0x1018, true,  0x2008, "load"},
-        {"AND",   "R-type", 0x101C, false, 0, nullptr},
-        {"OR",    "R-type", 0x1020, false, 0, nullptr},
-        {"SW",    "S-type", 0x1024, true,  0x200C, "store"},
+        {"ADD", "R-type", 0x1000, false, 0, nullptr},    {"SUB", "R-type", 0x1004, false, 0, nullptr},
+        {"LW", "I-type", 0x1008, true, 0x2000, "load"},  {"ADDI", "I-type", 0x100C, false, 0, nullptr},
+        {"SW", "S-type", 0x1010, true, 0x2004, "store"}, {"BEQ", "B-type", 0x1014, false, 0, nullptr},
+        {"LW", "I-type", 0x1018, true, 0x2008, "load"},  {"AND", "R-type", 0x101C, false, 0, nullptr},
+        {"OR", "R-type", 0x1020, false, 0, nullptr},     {"SW", "S-type", 0x1024, true, 0x200C, "store"},
     };
 
     // Process instructions in pairs (dual issue)
@@ -115,9 +113,10 @@ void test::main() {
         auto issue_time = sc_core::sc_time_stamp();
 
         // Issue up to 2 instructions simultaneously
-        for (size_t j = 0; j < 2; ++j) {
-            if(i+j>=program.size()) continue;
-            const auto& insn = program[i+j];
+        for(size_t j = 0; j < 2; ++j) {
+            if(i + j >= program.size())
+                continue;
+            const auto& insn = program[i + j];
             uint64_t insn_tx_id = tx_id++;
 
             // Create instruction transaction
