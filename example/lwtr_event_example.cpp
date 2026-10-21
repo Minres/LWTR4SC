@@ -58,7 +58,9 @@ const char* mem_stage_name(MemoryStage stage) {
 
 class test : public sc_module {
 public:
+#if IEEE_1666_SYSTEMC < 202301L
     SC_HAS_PROCESS(test);
+#endif
     test(::sc_core::sc_module_name) {
         SC_THREAD(main);
     }

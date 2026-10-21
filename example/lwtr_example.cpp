@@ -168,7 +168,9 @@ void rw_pipelined_transactor::write(const write_t* req) {
 class test : public sc_module {
 public:
     sc_port<rw_task_if> transactor;
+#if IEEE_1666_SYSTEMC < 202301L
     SC_HAS_PROCESS(test);
+#endif
     test(::sc_core::sc_module_name) {
         SC_THREAD(main1);
         SC_THREAD(main2);
@@ -227,7 +229,9 @@ class design : public pipelined_bus_ports {
     sc_uint<8> memory[ram_size];
 
 public:
+#if IEEE_1666_SYSTEMC < 202301L
     SC_HAS_PROCESS(design);
+#endif
     design(sc_module_name nm)
     : pipelined_bus_ports(nm) {
         for(unsigned i = 0; i < ram_size; ++i) {
